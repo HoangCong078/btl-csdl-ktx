@@ -1,0 +1,242 @@
+:root {
+    --mau-chinh: #4f46e5;
+    --mau-chinh-dam: #3730a3;
+    --nen: #f4f6fb;
+    --chu: #1e293b;
+    --chu-nhat: #64748b;
+    --vien: #e2e8f0;
+}
+
+body {
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--nen);
+    color: var(--chu);
+}
+
+/* ---------- Thanh menu bên trái ---------- */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 250px;
+    background: linear-gradient(180deg, #1e1b4b 0%, #312e81 100%);
+    color: #fff;
+    padding: 1.5rem 1rem;
+    overflow-y: auto;
+}
+
+.sidebar .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 700;
+    font-size: 1.15rem;
+    padding: 0 0.5rem 1.5rem;
+}
+
+.sidebar .brand i {
+    font-size: 1.6rem;
+    color: #a5b4fc;
+}
+
+.sidebar .nhom {
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #a5b4fc;
+    padding: 1rem 0.75rem 0.4rem;
+}
+
+.sidebar .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #e0e7ff;
+    padding: 0.6rem 0.75rem;
+    border-radius: 0.6rem;
+    margin-bottom: 0.15rem;
+    font-size: 0.95rem;
+}
+
+.sidebar .nav-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.sidebar .nav-link.active {
+    background: #fff;
+    color: var(--mau-chinh-dam);
+    font-weight: 600;
+}
+
+.sidebar .nav-link.disabled {
+    opacity: 0.45;
+    pointer-events: none;
+}
+
+.sidebar .nav-link .badge-sapco {
+    margin-left: auto;
+    font-size: 0.6rem;
+    background: rgba(255, 255, 255, 0.15);
+    padding: 0.15rem 0.45rem;
+    border-radius: 1rem;
+}
+
+/* ---------- Nội dung ---------- */
+.noidung {
+    margin-left: 250px;
+    padding: 2rem 2.25rem;
+}
+
+.tieu-de-trang h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.tieu-de-trang p {
+    color: var(--chu-nhat);
+    margin: 0.25rem 0 0;
+}
+
+.card-ktx {
+    background: #fff;
+    border: 1px solid var(--vien);
+    border-radius: 1rem;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+}
+
+.card-ktx .card-head {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--vien);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.card-ktx .card-head i {
+    color: var(--mau-chinh);
+}
+
+.card-ktx .card-body-ktx {
+    padding: 1.25rem;
+}
+
+/* ---------- Thẻ thống kê ---------- */
+.stat {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.1rem 1.25rem;
+}
+
+.stat .icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.8rem;
+    display: grid;
+    place-items: center;
+    font-size: 1.4rem;
+}
+
+.stat .so {
+    font-size: 1.6rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.stat .nhan {
+    color: var(--chu-nhat);
+    font-size: 0.85rem;
+}
+
+.bg-tim { background: #eef2ff; color: #4f46e5; }
+.bg-xanh { background: #ecfdf5; color: #059669; }
+.bg-cam { background: #fff7ed; color: #ea580c; }
+
+/* ---------- Form và bảng ---------- */
+.form-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--chu-nhat);
+    margin-bottom: 0.3rem;
+}
+
+.form-control,
+.form-select {
+    border-radius: 0.6rem;
+    border-color: var(--vien);
+    padding: 0.55rem 0.8rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--mau-chinh);
+    box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.15);
+}
+
+.btn-chinh {
+    background: var(--mau-chinh);
+    border: none;
+    color: #fff;
+    border-radius: 0.6rem;
+    padding: 0.55rem 1.4rem;
+    font-weight: 600;
+}
+
+.btn-chinh:hover {
+    background: var(--mau-chinh-dam);
+    color: #fff;
+}
+
+.bang-ktx {
+    margin: 0;
+}
+
+.bang-ktx thead th {
+    background: #f8fafc;
+    color: var(--chu-nhat);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--vien);
+    padding: 0.8rem 1rem;
+    white-space: nowrap;
+}
+
+.bang-ktx tbody td {
+    padding: 0.8rem 1rem;
+    vertical-align: middle;
+    border-color: var(--vien);
+}
+
+.bang-ktx tbody tr:hover {
+    background: #f8faff;
+}
+
+.tag-lop {
+    background: #eef2ff;
+    color: var(--mau-chinh-dam);
+    padding: 0.2rem 0.6rem;
+    border-radius: 1rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.alert {
+    border: none;
+    border-radius: 0.8rem;
+}
+
+/* ---------- Điện thoại / màn hình nhỏ ---------- */
+@media (max-width: 900px) {
+    .sidebar { position: static; width: auto; }
+    .noidung { margin-left: 0; padding: 1.25rem; }
+}
+
+.progress-mong {
+    height: 8px;
+}

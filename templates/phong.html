@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Phòng ở · Quản lý KTX{% endblock %}
+
+{% block content %}
+<div class="tieu-de-trang mb-4">
+    <h1>Quản lý phòng ở</h1>
+    <p>Danh mục phòng, đơn giá theo tháng và tình trạng lấp đầy.</p>
+</div>
+
+<!-- Thẻ thống kê -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card-ktx stat">
+            <div class="icon bg-tim"><i class="bi bi-door-open-fill"></i></div>
+            <div>
+                <div class="so">{{ ds|length }}</div>
+                <div class="nhan">Tổng số phòng</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card-ktx stat">
+            <div class="icon bg-xanh"><i class="bi bi-person-check-fill"></i></div>
+            <div>
+                <div class="so">{{ tong_dang_o }} / {{ tong_cho }}</div>
+                <div class="nhan">Đang ở / Tổng chỗ</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card-ktx stat">
+            <div class="icon bg-cam"><i class="bi bi-box-arrow-in-right"></i></div>
+            <div>
+                <div class="so">{{ tong_cho - tong_dang_o }}</div>
+                <div class="nhan">Chỗ còn trống</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Form thêm phòng -->
+<div class="card-ktx mb-4">
+    <div class="card-head"><i class="bi bi-plus-circle-fill"></i> Thêm phòng mới</div>
+    <div class="card-body-ktx">
+        <form method="POST" action="{{ url_for('phong') }}" class="row g-3">
+            <div class="col-md-2">
+                <label for="sophong" class="form-label">Số phòng *</label>
+                <input type="text" class="form-control" id="sophong" name="SoPhong"
+                       placeholder="P301" value="{{ form.get('SoPhong', '') }}" required>
+            </div>
+            <div class="col-md-3">
+                <label for="loaiphong" class="form-label">Loại phòng *</label>
+                <select class="form-select" id="loaiphong" name="LoaiPhong">
+                    {% for loai in ds_loai %}
+                    <option value="{{ loai }}" {% if form.get('LoaiPhong') == loai %}selected{% endif %}>{{ loai }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="dongia" class="form-label">Đơn giá / tháng (đ) *</label>
+                <input type="number" class="form-control" id="dongia" name="DonGia"
+                       min="1" step="1000" placeholder="500000" value="{{ form.get('DonGia', '') }}" required>
+            </div>
+            <div class="col-md-2">
+                <label for="toida" class="form-label">Số người tối đa *</label>
+                <input type="number" class="form-control" id="toida" name="SoNguoiToiDa"
+                       min="1" max="12" placeholder="4" value="{{ form.get('SoNguoiToiDa', '') }}" required>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-chinh w-100">
+                    <i class="bi bi-check2-circle"></i> Lưu phòng
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Bảng danh sách phòng -->
+<div class="card-ktx">
+    <div class="card-head"><i class="bi bi-list-ul"></i> Danh sách phòng</div>
+    <div class="table-responsive">
+        <table class="table bang-ktx">
+            <thead>
+                <tr>
+                    <th>Số phòng</th>
+                    <th>Loại phòng</th>
+                    <th>Đơn giá / tháng</th>
+                    <th style="min-width: 220px">Tình trạng</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in ds %}
+                {% set phantram = (p.DangO * 100 / p.SoNguoiToiDa)|round|int %}
+                {% set mau = 'bg-danger' if phantram >= 100 else ('bg-warning' if phantram >= 70 else 'bg-success') %}
+                <tr>
+                    <td class="fw-semibold">{{ p.SoPhong }}</td>
+                    <td><span class="tag-lop">{{ p.LoaiPhong }}</span></td>
+                    <td>{{ p.DonGia|tien }}</td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="progress progress-mong flex-grow-1">
+                                <div class="progress-bar {{ mau }}" data-phantram="{{ phantram }}"></div>
+                            </div>
+                            <small class="text-muted text-nowrap">{{ p.DangO }}/{{ p.SoNguoiToiDa }}</small>
+                        </div>
+                        {% if p.DangO >= p.SoNguoiToiDa %}
+                        <small class="text-danger">Đã đầy</small>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <form method="POST" action="{{ url_for('xoa_phong', so_phong=p.SoPhong) }}"
+                              onsubmit="return confirm('Xóa phòng {{ p.SoPhong }}?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-4">Chưa có phòng nào.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Đặt độ dài thanh tiến độ theo phần trăm lấp đầy của từng phòng
+    document.querySelectorAll(".progress-bar[data-phantram]").forEach(function (thanh) {
+        thanh.style.width = Math.min(thanh.dataset.phantram, 100) + "%";
+    });
+</script>
+{% endblock %}

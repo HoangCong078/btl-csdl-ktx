@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}Gửi xe tháng · Quản lý KTX{% endblock %}
+
+{% block content %}
+<div class="tieu-de-trang mb-4">
+    <h1>Gửi xe tháng</h1>
+    <p>Đăng ký vé tháng {{ gia|tien }}/xe. Mỗi sinh viên tối đa {{ toi_da }} xe còn hiệu lực.</p>
+</div>
+
+<!-- Form đăng ký -->
+<div class="card-ktx mb-4">
+    <div class="card-head"><i class="bi bi-bicycle"></i> Đăng ký vé tháng</div>
+    <div class="card-body-ktx">
+        <form method="POST" action="{{ url_for('xe_thang') }}" class="row g-3">
+            <div class="col-md-3">
+                <label for="locPhongForm" class="form-label">Chọn theo phòng</label>
+                <select class="form-select" id="locPhongForm">
+                    <option value="">Tất cả phòng</option>
+                    {% for p in ds_phong %}<option value="{{ p }}">{{ p }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="locLopForm" class="form-label">Chọn theo lớp</label>
+                <select class="form-select" id="locLopForm">
+                    <option value="">Tất cả lớp</option>
+                    {% for l in ds_lop %}<option value="{{ l }}">{{ l }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label for="masv" class="form-label">Sinh viên *</label>
+                <select class="form-select" id="masv" name="MaSV" required>
+                    {% for sv in ds_sv %}
+                    <option value="{{ sv.MaSV }}" data-phong="{{ sv.Phong }}" data-lop="{{ sv.Lop }}"
+                            {% if sv.SoXe >= toi_da %}disabled{% endif %}
+                            {% if form.get('MaSV') == sv.MaSV %}selected{% endif %}>
+                        {{ sv.HoTen }} · {{ sv.Phong or 'chưa có phòng' }} · {{ sv.Lop }}
+                        ({{ sv.SoXe }}/{{ toi_da }} xe{% if sv.SoXe >= toi_da %}, đã đủ{% endif %})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label for="loaixe" class="form-label">Loại xe *</label>
+                <select class="form-select" id="loaixe" name="LoaiXe">
+                    {% for l in ds_loai %}
+                    <option value="{{ l }}" {% if form.get('LoaiXe') == l %}selected{% endif %}>{{ l }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="bienso" class="form-label">Biển số *</label>
+                <input type="text" class="form-control" id="bienso" name="BienSo"
+                       placeholder="29A1-12345" value="{{ form.get('BienSo', '') }}" required>
+            </div>
+            <div class="col-md-3">
+                <label for="ngaybd" class="form-label">Ngày bắt đầu *</label>
+                <input type="date" class="form-control" id="ngaybd" name="NgayBatDau"
+                       value="{{ form.get('NgayBatDau', hom_nay) }}" required>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-chinh w-100">
+                    <i class="bi bi-check2-circle"></i> Đăng ký
+                </button>
+            </div>
+        </form>
+        <small class="text-muted d-block mt-3">
+            Xe đạp không có biển số: hệ thống dùng mã sinh viên làm mã xe.
+            Mỗi xe được 2 lượt lấy/gửi miễn phí mỗi ngày, từ lượt thứ 3 mất 3.000đ/lượt.
+        </small>
+    </div>
+</div>
+
+<!-- Bảng xe đã đăng ký -->
+<div class="card-ktx">
+    <div class="card-head justify-content-between flex-wrap gap-2">
+        <span><i class="bi bi-list-ul"></i> Xe đã đăng ký</span>
+        <input type="search" id="oTimKiem" class="form-control form-control-sm"
+               style="max-width: 260px" placeholder="Tìm biển số, tên, phòng...">
+    </div>
+    <div class="table-responsive">
+        <table class="table bang-ktx" id="bangXe">
+            <thead>
+                <tr>
+                    <th>Mã xe / Biển số</th>
+                    <th>Loại</th>
+                    <th>Sinh viên</th>
+                    <th>Phòng</th>
+                    <th>Từ ngày</th>
+                    <th>Đến ngày</th>
+                    <th>Trạng thái</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in ds_dk %}
+                <tr>
+                    <td class="fw-semibold">{{ d.BienSo }}</td>
+                    <td>{{ d.LoaiXe }}</td>
+                    <td>{{ d.HoTen }}<br><small class="text-muted">{{ d.MaSV }}</small></td>
+                    <td>{{ d.Phong }}</td>
+                    <td>{{ d.NgayBatDau|ngay }}</td>
+                    <td>{{ d.NgayKetThuc|ngay }}</td>
+                    <td>
+                        {% if d.NgayKetThuc is none %}
+                        <span class="badge text-bg-success">Còn hiệu lực</span>
+                        {% else %}
+                        <span class="badge text-bg-secondary">Đã hủy</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        {% if d.NgayKetThuc is none %}
+                        <form method="POST" action="{{ url_for('huy_xe', ma=d.MaDKXe) }}"
+                              onsubmit="return confirm('Hủy vé tháng xe {{ d.BienSo }}?');">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">Hủy vé</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" class="text-center text-muted py-4">Chưa có xe nào.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Chọn phòng/lớp thì ô sinh viên chỉ còn những người phù hợp
+    const locPhong = document.getElementById("locPhongForm");
+    const locLop = document.getElementById("locLopForm");
+    const oSV = document.getElementById("masv");
+
+    function locSinhVien() {
+        let conDangChon = false;
+        let dauTien = null;
+        Array.from(oSV.options).forEach(function (o) {
+            const khop = (!locPhong.value || o.dataset.phong === locPhong.value) &&
+                         (!locLop.value || o.dataset.lop === locLop.value);
+            o.hidden = !khop;
+            if (khop && !o.disabled && dauTien === null) dauTien = o;
+            if (khop && !o.disabled && o.selected) conDangChon = true;
+        });
+        if (!conDangChon && dauTien) dauTien.selected = true;
+    }
+    locPhong.addEventListener("change", locSinhVien);
+    locLop.addEventListener("change", locSinhVien);
+
+    // Xe đạp: không nhập biển số, hệ thống tự dùng mã sinh viên
+    const oLoai = document.getElementById("loaixe");
+    const oBien = document.getElementById("bienso");
+
+    function capNhatBienSo() {
+        const laXeDap = oLoai.value === "Xe đạp";
+        oBien.disabled = laXeDap;
+        oBien.required = !laXeDap;
+        oBien.placeholder = laXeDap ? "Tự lấy theo mã sinh viên" : "29A1-12345";
+        if (laXeDap) oBien.value = "";
+    }
+    oLoai.addEventListener("change", capNhatBienSo);
+    capNhatBienSo();
+
+    // Tìm nhanh trong bảng
+    document.getElementById("oTimKiem").addEventListener("input", function () {
+        const tuKhoa = this.value.toLowerCase();
+        document.querySelectorAll("#bangXe tbody tr").forEach(function (dong) {
+            dong.style.display = dong.textContent.toLowerCase().includes(tuKhoa) ? "" : "none";
+        });
+    });
+</script>
+{% endblock %}
