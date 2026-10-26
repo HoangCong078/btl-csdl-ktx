@@ -1,0 +1,16 @@
+{% macro stat(icon, mau, so, nhan) %}
+<div class="card-ktx stat">
+    <div class="icon ic-{{ mau }}"><i class="bi bi-{{ icon }}"></i></div>
+    <div>
+        <div class="so">{{ so }}</div>
+        <div class="nhan">{{ nhan }}</div>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro tieu_de(ten, mota) %}
+<div class="tieu-de-trang">
+    <h1>{{ ten }}</h1>
+    <p>{{ mota }}</p>
+</div>
+{% endmacro %}

@@ -1,13 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Dịch vụ · Quản lý KTX{% endblock %}
+{% block title %}Dịch vụ · KTX Manager{% endblock %}
 
 {% block content %}
-<div class="tieu-de-trang mb-4">
-    <h1>Dịch vụ</h1>
-    <p>Ghi nhận dịch vụ sinh viên sử dụng và xem tiền theo phòng, lớp, khoảng ngày.</p>
-</div>
+{% from "_macros.html" import stat, tieu_de %}
+{{ tieu_de("Dịch vụ", "Ghi nhận dịch vụ sinh viên sử dụng và xem tiền theo phòng, lớp, khoảng ngày.") }}
 
-<!-- Ghi nhận -->
 <div class="card-ktx mb-4">
     <div class="card-head"><i class="bi bi-plus-circle-fill"></i> Ghi nhận lượt sử dụng</div>
     <div class="card-body-ktx">
@@ -37,7 +34,6 @@
                     {% endfor %}
                 </select>
             </div>
-
             <div class="col-md-4">
                 <label for="madv" class="form-label">Dịch vụ *</label>
                 <select class="form-select" id="madv" name="MaDV" required>
@@ -50,8 +46,7 @@
             </div>
             <div class="col-md-2">
                 <label for="soluong" class="form-label">Số lượng *</label>
-                <input type="number" class="form-control" id="soluong" name="SoLuong"
-                       min="1" value="{{ form.get('SoLuong', 1) }}" required>
+                <input type="number" class="form-control" id="soluong" name="SoLuong" min="1" value="{{ form.get('SoLuong', 1) }}" required>
             </div>
             <div class="col-md-3">
                 <label for="thoidiem" class="form-label">Thời điểm *</label>
@@ -59,22 +54,17 @@
                        value="{{ form.get('ThoiDiemSuDung', bay_gio) }}" required>
             </div>
             <div class="col-md-3 d-flex align-items-end">
-                <button type="submit" class="btn btn-chinh w-100">
-                    <i class="bi bi-check2-circle"></i> Ghi nhận
-                </button>
+                <button type="submit" class="btn btn-chinh w-100"><i class="bi bi-check2-circle"></i> Ghi nhận</button>
             </div>
         </form>
-        <small class="text-muted d-block mt-3">
-            Chọn phòng hoặc lớp trước để thu hẹp danh sách sinh viên. Thành tiền được tính tự động.
-        </small>
+        <small class="text-muted d-block mt-3">Chọn phòng hoặc lớp trước để thu hẹp danh sách sinh viên. Thành tiền được tính tự động.</small>
     </div>
 </div>
 
-<!-- Thống kê -->
-<div class="card-ktx">
+<div class="card-ktx mb-4">
     <div class="card-head justify-content-between flex-wrap gap-2">
         <span><i class="bi bi-bar-chart-fill"></i> Tiền dịch vụ theo sinh viên</span>
-        <span class="text-muted fw-normal">Tổng: <strong class="text-dark">{{ tong_tien|tien }}</strong></span>
+        <span class="tag tag-info fs-6">Tổng: {{ tong_tien|tien }}</span>
     </div>
     <div class="card-body-ktx border-bottom">
         <form method="GET" action="{{ url_for('dichvu') }}" class="row g-3 align-items-end">
@@ -90,62 +80,41 @@
                 <label for="phong" class="form-label">Phòng</label>
                 <select class="form-select" id="phong" name="phong">
                     <option value="">Tất cả phòng</option>
-                    {% for p in ds_phong %}
-                    <option value="{{ p }}" {% if loc_phong == p %}selected{% endif %}>{{ p }}</option>
-                    {% endfor %}
+                    {% for p in ds_phong %}<option value="{{ p }}" {% if loc_phong == p %}selected{% endif %}>{{ p }}</option>{% endfor %}
                 </select>
             </div>
             <div class="col-md-3">
                 <label for="lop" class="form-label">Lớp</label>
                 <select class="form-select" id="lop" name="lop">
                     <option value="">Tất cả lớp</option>
-                    {% for l in ds_lop %}
-                    <option value="{{ l }}" {% if loc_lop == l %}selected{% endif %}>{{ l }}</option>
-                    {% endfor %}
+                    {% for l in ds_lop %}<option value="{{ l }}" {% if loc_lop == l %}selected{% endif %}>{{ l }}</option>{% endfor %}
                 </select>
             </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-chinh w-100">Xem</button>
-            </div>
+            <div class="col-md-2"><button type="submit" class="btn btn-chinh w-100">Xem</button></div>
         </form>
     </div>
     <div class="table-responsive">
         <table class="table bang-ktx">
-            <thead>
-                <tr>
-                    <th>Sinh viên</th>
-                    <th>Phòng</th>
-                    <th>Lớp</th>
-                    <th>Dịch vụ</th>
-                    <th>Số lượng</th>
-                    <th>Tổng tiền</th>
-                </tr>
-            </thead>
+            <thead><tr><th>Sinh viên</th><th>Phòng</th><th>Lớp</th><th>Dịch vụ</th><th>Số lượng</th><th>Tổng tiền</th></tr></thead>
             <tbody>
                 {% for t in ds_thongke %}
                 <tr>
-                    <td>
-                        <span class="fw-semibold">{{ t.HoTenSV }}</span><br>
-                        <small class="text-muted">{{ t.MaSV }}</small>
-                    </td>
+                    <td><div class="fw-semibold">{{ t.HoTenSV }}</div><small class="text-muted">{{ t.MaSV }}</small></td>
                     <td>{{ t.Phong }}</td>
-                    <td><span class="tag-lop">{{ t.Lop }}</span></td>
+                    <td><span class="tag tag-lop">{{ t.Lop }}</span></td>
                     <td>{{ t.TenDV }}</td>
                     <td>{{ t.SoLuong }} {{ t.DonViTinh }}</td>
-                    <td class="fw-semibold">{{ t.TongTien|tien }}</td>
+                    <td class="fw-bold">{{ t.TongTien|tien }}</td>
                 </tr>
                 {% else %}
-                <tr>
-                    <td colspan="6" class="text-center text-muted py-4">Không có dữ liệu với bộ lọc này.</td>
-                </tr>
+                <tr><td colspan="6" class="text-center text-muted py-4">Không có dữ liệu với bộ lọc này.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
 
-<!-- Lượt gần đây -->
-<div class="card-ktx mt-4">
+<div class="card-ktx">
     <div class="card-head"><i class="bi bi-clock-history"></i> Vừa ghi nhận</div>
     <div class="table-responsive">
         <table class="table bang-ktx">
@@ -154,14 +123,11 @@
                 <tr>
                     <td>{{ s.ThoiDiemSuDung|gio }}</td>
                     <td>{{ s.HoTenSV }}</td>
-                    <td>{{ s.TenDV }} x {{ s.SoLuong }}</td>
-                    <td class="fw-semibold">{{ s.ThanhTien|tien }}</td>
+                    <td>{{ s.TenDV }} × {{ s.SoLuong }}</td>
+                    <td class="fw-bold">{{ s.ThanhTien|tien }}</td>
                     <td class="text-end">
-                        <form method="POST" action="{{ url_for('xoa_luot_dung', ma=s.MaSuDung) }}"
-                              onsubmit="return confirm('Xóa lượt này?');">
-                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa">
-                                <i class="bi bi-trash"></i>
-                            </button>
+                        <form method="POST" action="{{ url_for('xoa_luot_dung', ma=s.MaSuDung) }}" data-confirm="Xóa lượt sử dụng này?">
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa"><i class="bi bi-trash"></i></button>
                         </form>
                     </td>
                 </tr>
@@ -172,29 +138,4 @@
         </table>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-    // Chọn phòng/lớp thì ô sinh viên chỉ còn những người phù hợp
-    const locPhong = document.getElementById("locPhongForm");
-    const locLop = document.getElementById("locLopForm");
-    const oSV = document.getElementById("masv");
-
-    function locSinhVien() {
-        let conDangChon = false;
-        let dauTien = null;
-        Array.from(oSV.options).forEach(function (o) {
-            const khop = (!locPhong.value || o.dataset.phong === locPhong.value) &&
-                         (!locLop.value || o.dataset.lop === locLop.value);
-            o.hidden = !khop;
-            o.disabled = !khop;
-            if (khop && dauTien === null) dauTien = o;
-            if (khop && o.selected) conDangChon = true;
-        });
-        if (!conDangChon && dauTien) dauTien.selected = true;
-    }
-    locPhong.addEventListener("change", locSinhVien);
-    locLop.addEventListener("change", locSinhVien);
-</script>
 {% endblock %}

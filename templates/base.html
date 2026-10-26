@@ -3,74 +3,166 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}Quản lý KTX{% endblock %}</title>
-
+    <title>{% block title %}KTX Manager{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+    {% set ep = request.endpoint %}
     <aside class="sidebar">
         <div class="brand">
-            <i class="bi bi-building"></i>
-            <span>Quản lý KTX</span>
+            <div class="logo"><i class="bi bi-buildings-fill"></i></div>
+            <div>
+                <div class="ten">KTX Manager</div>
+                <div class="phu">Quản lý ký túc xá</div>
+            </div>
         </div>
 
         <nav class="nav flex-column">
-            <div class="nhom">Quản lý</div>
-            <a class="nav-link {% if request.endpoint in ('sinhvien', 'xoa_sinhvien') %}active{% endif %}"
-               href="{{ url_for('sinhvien') }}">
-                <i class="bi bi-people"></i> Sinh viên
+            <a class="nav-link {% if ep == 'trang_chu' %}active{% endif %}" href="{{ url_for('trang_chu') }}">
+                <i class="bi bi-grid-1x2-fill"></i> Tổng quan
             </a>
-            <a class="nav-link {% if request.endpoint in ('phong', 'xoa_phong') %}active{% endif %}"
-                href="{{ url_for('phong') }}">
-                <i class="bi bi-door-open"></i> Phòng ở
+
+            <div class="nhom">Lưu trú</div>
+            <a class="nav-link {% if ep in ('sinhvien', 'xoa_sinhvien') %}active{% endif %}" href="{{ url_for('sinhvien') }}">
+                <i class="bi bi-people-fill"></i> Sinh viên
             </a>
-            <a class="nav-link {% if request.endpoint in ('dangky_o', 'tra_phong') %}active{% endif %}"
-                href="{{ url_for('dangky_o') }}">
-                <i class="bi bi-key"></i> Đăng ký ở
+            <a class="nav-link {% if ep in ('phong', 'xoa_phong') %}active{% endif %}" href="{{ url_for('phong') }}">
+                <i class="bi bi-door-open-fill"></i> Phòng ở
             </a>
-            <a class="nav-link {% if request.endpoint == 'khach' %}active{% endif %}"
-                href="{{ url_for('khach') }}">
-                <i class="bi bi-person-badge"></i> Khách thăm
+            <a class="nav-link {% if ep in ('dangky_o', 'tra_phong') %}active{% endif %}" href="{{ url_for('dangky_o') }}">
+                <i class="bi bi-key-fill"></i> Đăng ký ở
+            </a>
+            <a class="nav-link {% if ep == 'khach' %}active{% endif %}" href="{{ url_for('khach') }}">
+                <i class="bi bi-person-badge-fill"></i> Khách thăm
             </a>
 
             <div class="nhom">Dịch vụ</div>
-            <a class="nav-link {% if request.endpoint in ('dichvu', 'xoa_luot_dung') %}active{% endif %}"
-                href="{{ url_for('dichvu') }}">
-                <i class="bi bi-basket"></i> Dịch vụ
+            <a class="nav-link {% if ep in ('dichvu', 'xoa_luot_dung') %}active{% endif %}" href="{{ url_for('dichvu') }}">
+                <i class="bi bi-basket-fill"></i> Dịch vụ
             </a>
-            <a class="nav-link {% if request.endpoint in ('xe_thang', 'huy_xe') %}active{% endif %}"
-                href="{{ url_for('xe_thang') }}">
+            <a class="nav-link {% if ep in ('xe_thang', 'huy_xe') %}active{% endif %}" href="{{ url_for('xe_thang') }}">
                 <i class="bi bi-bicycle"></i> Gửi xe tháng
+            </a>
+            <a class="nav-link {% if ep in ('quet_xe', 'xoa_luot_xe') %}active{% endif %}" href="{{ url_for('quet_xe') }}">
+                <i class="bi bi-upc-scan"></i> Quẹt xe
             </a>
 
             <div class="nhom">Tài chính</div>
-            <a class="nav-link disabled" href="#">
-                <i class="bi bi-receipt"></i> Hóa đơn <span class="badge-sapco">Sắp có</span>
+                        <a class="nav-link {% if ep in ('hoadon', 'hoadon_chitiet', 'hoadon_thu') %}active{% endif %}" href="{{ url_for('hoadon') }}">
+                <i class="bi bi-receipt"></i> Hóa đơn
             </a>
-            <a class="nav-link disabled" href="#">
-                <i class="bi bi-graph-up"></i> Doanh thu <span class="badge-sapco">Sắp có</span>
+            <a class="nav-link {% if ep == 'doanhthu' %}active{% endif %}" href="{{ url_for('doanhthu') }}">
+                <i class="bi bi-graph-up-arrow"></i> Doanh thu
             </a>
+            
         </nav>
     </aside>
 
     <main class="noidung">
+        <div class="topbar">
+            <span class="chip"><i class="bi bi-calendar3"></i> {{ hom_nay_hien_thi }}</span>
+        </div>
+
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% for loai, noidung in messages %}
-                <div class="alert alert-{{ loai }} alert-dismissible fade show" role="alert">
-                    {{ noidung }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
+            <div class="alert alert-{{ loai }} alert-dismissible fade show" role="alert">
+                <i class="bi {% if loai == 'success' %}bi-check-circle-fill{% elif loai == 'danger' %}bi-x-octagon-fill{% else %}bi-exclamation-triangle-fill{% endif %}"></i>
+                <span>{{ noidung }}</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
             {% endfor %}
         {% endwith %}
 
         {% block content %}{% endblock %}
     </main>
 
+    <!-- Hộp xác nhận dùng chung: thêm data-confirm="..." vào <form> là có -->
+    <div class="modal fade" id="modalXacNhan" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content p-2">
+                <div class="modal-body text-center">
+                    <div class="stat-icon mb-3"><i class="bi bi-exclamation-circle-fill text-warning" style="font-size:2.6rem"></i></div>
+                    <h6 class="fw-bold">Xác nhận thao tác</h6>
+                    <p class="text-muted mb-4" id="modalNoiDung"></p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                        <button type="button" class="btn btn-chinh" id="modalDongY">Đồng ý</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 1) Hộp xác nhận cho mọi form có data-confirm
+        (function () {
+            const modal = new bootstrap.Modal(document.getElementById("modalXacNhan"));
+            const noiDung = document.getElementById("modalNoiDung");
+            let formCho = null;
+            document.addEventListener("submit", function (e) {
+                const f = e.target;
+                if (f.dataset.confirm) {
+                    e.preventDefault();
+                    formCho = f;
+                    noiDung.textContent = f.dataset.confirm;
+                    modal.show();
+                }
+            });
+            document.getElementById("modalDongY").addEventListener("click", function () {
+                if (formCho) { formCho.submit(); }
+            });
+        })();
+
+        // 2) Thanh tiến độ: đặt độ dài từ data-width
+        document.querySelectorAll("[data-width]").forEach(function (el) {
+            el.style.width = Math.min(el.dataset.width, 100) + "%";
+        });
+
+        // 3) Thông báo tự tắt sau 6 giây
+        setTimeout(function () {
+            document.querySelectorAll(".alert").forEach(function (a) {
+                bootstrap.Alert.getOrCreateInstance(a).close();
+            });
+        }, 6000);
+
+        // 4) Chọn phòng/lớp thì ô sinh viên chỉ còn những người phù hợp
+        (function () {
+            const locPhong = document.getElementById("locPhongForm");
+            const locLop = document.getElementById("locLopForm");
+            const oSV = document.getElementById("masv");
+            if (!locPhong || !locLop || !oSV) { return; }
+            function loc() {
+                let conDangChon = false, dauTien = null;
+                Array.from(oSV.options).forEach(function (o) {
+                    const khop = (!locPhong.value || o.dataset.phong === locPhong.value) &&
+                                 (!locLop.value || o.dataset.lop === locLop.value);
+                    o.hidden = !khop;
+                    if (khop && !o.disabled && dauTien === null) { dauTien = o; }
+                    if (khop && !o.disabled && o.selected) { conDangChon = true; }
+                });
+                if (!conDangChon && dauTien) { dauTien.selected = true; }
+            }
+            locPhong.addEventListener("change", loc);
+            locLop.addEventListener("change", loc);
+        })();
+
+        // 5) Ô tìm nhanh trong bảng: <input id="oTimKiem" data-bang="idBang">
+        (function () {
+            const o = document.getElementById("oTimKiem");
+            if (!o) { return; }
+            o.addEventListener("input", function () {
+                const tuKhoa = o.value.toLowerCase();
+                document.querySelectorAll("#" + o.dataset.bang + " tbody tr").forEach(function (dong) {
+                    dong.style.display = dong.textContent.toLowerCase().includes(tuKhoa) ? "" : "none";
+                });
+            });
+        })();
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

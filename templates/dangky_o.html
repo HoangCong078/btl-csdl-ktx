@@ -1,15 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Đăng ký ở · Quản lý KTX{% endblock %}
+{% block title %}Đăng ký ở · KTX Manager{% endblock %}
 
 {% block content %}
-<div class="tieu-de-trang mb-4">
-    <h1>Đăng ký ở / trả phòng</h1>
-    <p>Xếp sinh viên vào phòng. Hệ thống chặn khi phòng đã đủ người hoặc sinh viên đang ở phòng khác.</p>
-</div>
+{% from "_macros.html" import tieu_de %}
+{{ tieu_de("Đăng ký ở / trả phòng", "Hệ thống chặn khi phòng đã đủ người hoặc sinh viên đang ở phòng khác.") }}
 
-<!-- Form đăng ký -->
 <div class="card-ktx mb-4">
-    <div class="card-head"><i class="bi bi-box-arrow-in-right"></i> Đăng ký ở mới</div>
+    <div class="card-head"><i class="bi bi-box-arrow-in-right"></i> Xếp sinh viên vào phòng</div>
     <div class="card-body-ktx">
         <form method="POST" action="{{ url_for('dangky_o') }}" class="row g-3">
             <div class="col-md-4">
@@ -17,10 +14,10 @@
                 <select class="form-select" id="masv" name="MaSV" required>
                     {% for sv in ds_sv_trong %}
                     <option value="{{ sv.MaSV }}" {% if form.get('MaSV') == sv.MaSV %}selected{% endif %}>
-                        {{ sv.MaSV }} - {{ sv.HoTen }}
+                        {{ sv.HoTen }} · {{ sv.MaSV }}
                     </option>
                     {% else %}
-                    <option value="" disabled selected>Mọi sinh viên đều đang có phòng</option>
+                    <option value="" disabled selected>Mọi sinh viên đều đã có phòng</option>
                     {% endfor %}
                 </select>
             </div>
@@ -30,80 +27,58 @@
                     {% for p in ds_phong %}
                     <option value="{{ p.SoPhong }}" {% if p.Con <= 0 %}disabled{% endif %}
                             {% if form.get('SoPhong') == p.SoPhong %}selected{% endif %}>
-                        {{ p.SoPhong }} - {{ p.LoaiPhong }} - {{ p.DonGia|tien }}/tháng
-                        ({{ p.DangO }}/{{ p.SoNguoiToiDa }}{% if p.Con <= 0 %}, đã đầy{% endif %})
+                        {{ p.SoPhong }} · {{ p.LoaiPhong }} · {{ p.DonGia|tien }}/tháng ({{ p.DangO }}/{{ p.SoNguoiToiDa }}{% if p.Con <= 0 %}, đã đầy{% endif %})
                     </option>
                     {% endfor %}
                 </select>
             </div>
             <div class="col-md-2">
                 <label for="ngaybd" class="form-label">Ngày bắt đầu *</label>
-                <input type="date" class="form-control" id="ngaybd" name="NgayBatDau"
-                       value="{{ form.get('NgayBatDau', hom_nay) }}" required>
+                <input type="date" class="form-control" id="ngaybd" name="NgayBatDau" value="{{ form.get('NgayBatDau', hom_nay) }}" required>
             </div>
             <div class="col-md-2 d-flex align-items-end">
-                <button type="submit" class="btn btn-chinh w-100">
-                    <i class="bi bi-check2-circle"></i> Đăng ký
-                </button>
+                <button type="submit" class="btn btn-chinh w-100"><i class="bi bi-check2-circle"></i> Đăng ký</button>
             </div>
         </form>
-        <small class="text-muted d-block mt-3">
-            Đơn giá được lấy tự động từ phòng tại thời điểm đăng ký. Tiền phòng tính chẵn tháng.
-        </small>
+        <small class="text-muted d-block mt-3">Đơn giá lấy tự động từ phòng tại thời điểm đăng ký. Tiền phòng tính chẵn tháng.</small>
     </div>
 </div>
 
-<!-- Bảng các bản đăng ký -->
 <div class="card-ktx">
     <div class="card-head"><i class="bi bi-list-ul"></i> Lịch sử đăng ký ở</div>
     <div class="table-responsive">
         <table class="table bang-ktx">
             <thead>
-                <tr>
-                    <th>Mã ĐK</th>
-                    <th>Sinh viên</th>
-                    <th>Phòng</th>
-                    <th>Từ ngày</th>
-                    <th>Đến ngày</th>
-                    <th>Đơn giá áp dụng</th>
-                    <th>Trạng thái</th>
-                    <th></th>
-                </tr>
+                <tr><th>Sinh viên</th><th>Phòng</th><th>Từ ngày</th><th>Đến ngày</th><th>Đơn giá áp dụng</th><th>Trạng thái</th><th></th></tr>
             </thead>
             <tbody>
                 {% for dk in ds_dk %}
                 <tr>
-                    <td>{{ dk.MaDKO }}</td>
                     <td>
-                        <span class="fw-semibold">{{ dk.MaSV }}</span><br>
-                        <small class="text-muted">{{ dk.HoTen }}</small>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="avatar">{{ dk.HoTen.split()[-1][0] }}</span>
+                            <div><div class="fw-semibold">{{ dk.HoTen }}</div><small class="text-muted">{{ dk.MaSV }}</small></div>
+                        </div>
                     </td>
-                    <td><span class="tag-lop">{{ dk.SoPhong }}</span></td>
+                    <td><span class="tag tag-lop">{{ dk.SoPhong }}</span></td>
                     <td>{{ dk.NgayBatDau|ngay }}</td>
                     <td>{{ dk.NgayKetThuc|ngay }}</td>
                     <td>{{ dk.DonGiaThangApDung|tien }}</td>
                     <td>
-                        {% if dk.NgayKetThuc is none %}
-                        <span class="badge text-bg-success">Đang ở</span>
-                        {% else %}
-                        <span class="badge text-bg-secondary">Đã trả</span>
-                        {% endif %}
+                        {% if dk.NgayKetThuc is none %}<span class="tag tag-ok">Đang ở</span>
+                        {% else %}<span class="tag tag-off">Đã trả</span>{% endif %}
                     </td>
                     <td class="text-end">
                         {% if dk.NgayKetThuc is none %}
                         <form method="POST" action="{{ url_for('tra_phong', ma_dko=dk.MaDKO) }}"
-                              onsubmit="return confirm('Trả phòng {{ dk.SoPhong }} cho {{ dk.MaSV }}?');">
-                            <button type="submit" class="btn btn-sm btn-outline-secondary">
-                                <i class="bi bi-box-arrow-left"></i> Trả phòng
-                            </button>
+                              data-confirm="Trả phòng {{ dk.SoPhong }} cho {{ dk.HoTen }}?">
+                            <button type="submit" class="btn btn-sm btn-nhat"><i class="bi bi-box-arrow-left"></i> Trả phòng</button>
                         </form>
                         {% endif %}
                     </td>
                 </tr>
                 {% else %}
-                <tr>
-                    <td colspan="8" class="text-center text-muted py-4">Chưa có bản đăng ký nào.</td>
-                </tr>
+                <tr><td colspan="7" class="text-center text-muted py-4">Chưa có bản đăng ký nào.</td></tr>
                 {% endfor %}
             </tbody>
         </table>

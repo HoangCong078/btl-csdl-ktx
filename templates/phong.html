@@ -1,52 +1,24 @@
 {% extends "base.html" %}
-{% block title %}Phòng ở · Quản lý KTX{% endblock %}
+{% block title %}Phòng ở · KTX Manager{% endblock %}
 
 {% block content %}
-<div class="tieu-de-trang mb-4">
-    <h1>Quản lý phòng ở</h1>
-    <p>Danh mục phòng, đơn giá theo tháng và tình trạng lấp đầy.</p>
-</div>
+{% from "_macros.html" import stat, tieu_de %}
+{{ tieu_de("Phòng ở", "Danh mục phòng, đơn giá theo tháng và tình trạng lấp đầy.") }}
 
-<!-- Thẻ thống kê -->
 <div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="card-ktx stat">
-            <div class="icon bg-tim"><i class="bi bi-door-open-fill"></i></div>
-            <div>
-                <div class="so">{{ ds|length }}</div>
-                <div class="nhan">Tổng số phòng</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card-ktx stat">
-            <div class="icon bg-xanh"><i class="bi bi-person-check-fill"></i></div>
-            <div>
-                <div class="so">{{ tong_dang_o }} / {{ tong_cho }}</div>
-                <div class="nhan">Đang ở / Tổng chỗ</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card-ktx stat">
-            <div class="icon bg-cam"><i class="bi bi-box-arrow-in-right"></i></div>
-            <div>
-                <div class="so">{{ tong_cho - tong_dang_o }}</div>
-                <div class="nhan">Chỗ còn trống</div>
-            </div>
-        </div>
-    </div>
+    <div class="col-md-4">{{ stat("door-open-fill", "tim", ds|length, "Tổng số phòng") }}</div>
+    <div class="col-md-4">{{ stat("person-check-fill", "xanh", tong_dang_o ~ " / " ~ tong_cho, "Đang ở / Tổng chỗ") }}</div>
+    <div class="col-md-4">{{ stat("box-arrow-in-right", "cam", tong_cho - tong_dang_o, "Chỗ còn trống") }}</div>
 </div>
 
-<!-- Form thêm phòng -->
 <div class="card-ktx mb-4">
     <div class="card-head"><i class="bi bi-plus-circle-fill"></i> Thêm phòng mới</div>
     <div class="card-body-ktx">
         <form method="POST" action="{{ url_for('phong') }}" class="row g-3">
             <div class="col-md-2">
                 <label for="sophong" class="form-label">Số phòng *</label>
-                <input type="text" class="form-control" id="sophong" name="SoPhong"
-                       placeholder="P301" value="{{ form.get('SoPhong', '') }}" required>
+                <input type="text" class="form-control" id="sophong" name="SoPhong" placeholder="P301"
+                       value="{{ form.get('SoPhong', '') }}" required>
             </div>
             <div class="col-md-3">
                 <label for="loaiphong" class="form-label">Loại phòng *</label>
@@ -58,81 +30,56 @@
             </div>
             <div class="col-md-3">
                 <label for="dongia" class="form-label">Đơn giá / tháng (đ) *</label>
-                <input type="number" class="form-control" id="dongia" name="DonGia"
-                       min="1" step="1000" placeholder="500000" value="{{ form.get('DonGia', '') }}" required>
+                <input type="number" class="form-control" id="dongia" name="DonGia" min="1" step="1000"
+                       placeholder="500000" value="{{ form.get('DonGia', '') }}" required>
             </div>
             <div class="col-md-2">
                 <label for="toida" class="form-label">Số người tối đa *</label>
-                <input type="number" class="form-control" id="toida" name="SoNguoiToiDa"
-                       min="1" max="12" placeholder="4" value="{{ form.get('SoNguoiToiDa', '') }}" required>
+                <input type="number" class="form-control" id="toida" name="SoNguoiToiDa" min="1" max="12"
+                       placeholder="4" value="{{ form.get('SoNguoiToiDa', '') }}" required>
             </div>
             <div class="col-md-2 d-flex align-items-end">
-                <button type="submit" class="btn btn-chinh w-100">
-                    <i class="bi bi-check2-circle"></i> Lưu phòng
-                </button>
+                <button type="submit" class="btn btn-chinh w-100"><i class="bi bi-check2-circle"></i> Lưu</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Bảng danh sách phòng -->
-<div class="card-ktx">
-    <div class="card-head"><i class="bi bi-list-ul"></i> Danh sách phòng</div>
-    <div class="table-responsive">
-        <table class="table bang-ktx">
-            <thead>
-                <tr>
-                    <th>Số phòng</th>
-                    <th>Loại phòng</th>
-                    <th>Đơn giá / tháng</th>
-                    <th style="min-width: 220px">Tình trạng</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for p in ds %}
-                {% set phantram = (p.DangO * 100 / p.SoNguoiToiDa)|round|int %}
-                {% set mau = 'bg-danger' if phantram >= 100 else ('bg-warning' if phantram >= 70 else 'bg-success') %}
-                <tr>
-                    <td class="fw-semibold">{{ p.SoPhong }}</td>
-                    <td><span class="tag-lop">{{ p.LoaiPhong }}</span></td>
-                    <td>{{ p.DonGia|tien }}</td>
-                    <td>
-                        <div class="d-flex align-items-center gap-2">
-                            <div class="progress progress-mong flex-grow-1">
-                                <div class="progress-bar {{ mau }}" data-phantram="{{ phantram }}"></div>
-                            </div>
-                            <small class="text-muted text-nowrap">{{ p.DangO }}/{{ p.SoNguoiToiDa }}</small>
-                        </div>
-                        {% if p.DangO >= p.SoNguoiToiDa %}
-                        <small class="text-danger">Đã đầy</small>
-                        {% endif %}
-                    </td>
-                    <td class="text-end">
-                        <form method="POST" action="{{ url_for('xoa_phong', so_phong=p.SoPhong) }}"
-                              onsubmit="return confirm('Xóa phòng {{ p.SoPhong }}?');">
-                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </form>
-                    </td>
-                </tr>
+<div class="row g-3">
+    {% for p in ds %}
+    {% set pt = (p.DangO * 100 / p.SoNguoiToiDa)|round|int %}
+    <div class="col-md-6 col-xl-4">
+        <div class="card-ktx phong-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                    <div class="so-phong">{{ p.SoPhong }}</div>
+                    <span class="tag tag-lop">{{ p.LoaiPhong }}</span>
+                </div>
+                <form method="POST" action="{{ url_for('xoa_phong', so_phong=p.SoPhong) }}"
+                      data-confirm="Xóa phòng {{ p.SoPhong }}?">
+                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa"><i class="bi bi-trash"></i></button>
+                </form>
+            </div>
+            <div class="gia mb-3">{{ p.DonGia|tien }} / tháng</div>
+            <div class="d-flex justify-content-between mb-1">
+                <small class="text-muted">Đang ở</small>
+                <small class="fw-semibold">{{ p.DangO }}/{{ p.SoNguoiToiDa }}</small>
+            </div>
+            <div class="progress progress-mong">
+                <div class="progress-bar {% if pt >= 100 %}bg-danger{% elif pt >= 70 %}bg-warning{% else %}bg-success{% endif %}"
+                     data-width="{{ pt }}"></div>
+            </div>
+            <div class="mt-2">
+                {% if p.DangO >= p.SoNguoiToiDa %}
+                <span class="tag tag-bad">Đã đầy</span>
                 {% else %}
-                <tr>
-                    <td colspan="5" class="text-center text-muted py-4">Chưa có phòng nào.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                <span class="tag tag-ok">Còn {{ p.SoNguoiToiDa - p.DangO }} chỗ</span>
+                {% endif %}
+            </div>
+        </div>
     </div>
+    {% else %}
+    <div class="col-12"><div class="card-ktx p-4 text-center text-muted">Chưa có phòng nào.</div></div>
+    {% endfor %}
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-    // Đặt độ dài thanh tiến độ theo phần trăm lấp đầy của từng phòng
-    document.querySelectorAll(".progress-bar[data-phantram]").forEach(function (thanh) {
-        thanh.style.width = Math.min(thanh.dataset.phantram, 100) + "%";
-    });
-</script>
 {% endblock %}

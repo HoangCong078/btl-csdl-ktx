@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Hóa đơn · KTX Manager{% endblock %}
+
+{% block content %}
+{% from "_macros.html" import stat, tieu_de %}
+{{ tieu_de("Hóa đơn tháng " ~ thang ~ "/" ~ nam, "Tiền mỗi sinh viên phải trả: phòng (chẵn tháng), dịch vụ, vé tháng xe, phí gửi xe phát sinh.") }}
+
+<div class="card-ktx mb-4">
+    <div class="card-body-ktx">
+        <form method="GET" action="{{ url_for('hoadon') }}" class="row g-3 align-items-end">
+            <div class="col-md-2">
+                <label for="thang" class="form-label">Tháng</label>
+                <select class="form-select" id="thang" name="thang">
+                    {% for t in range(1, 13) %}<option value="{{ t }}" {% if t == thang %}selected{% endif %}>Tháng {{ t }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="nam" class="form-label">Năm</label>
+                <select class="form-select" id="nam" name="nam">
+                    {% for n in ds_nam %}<option value="{{ n }}" {% if n == nam %}selected{% endif %}>{{ n }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="phong" class="form-label">Phòng</label>
+                <select class="form-select" id="phong" name="phong">
+                    <option value="">Tất cả phòng</option>
+                    {% for p in ds_phong %}<option value="{{ p }}" {% if loc_phong == p %}selected{% endif %}>{{ p }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="lop" class="form-label">Lớp</label>
+                <select class="form-select" id="lop" name="lop">
+                    <option value="">Tất cả lớp</option>
+                    {% for l in ds_lop %}<option value="{{ l }}" {% if loc_lop == l %}selected{% endif %}>{{ l }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2"><button type="submit" class="btn btn-chinh w-100">Xem</button></div>
+        </form>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">{{ stat("receipt", "tim", tong_cong|tien, "Tổng phải thu") }}</div>
+    <div class="col-md-4">{{ stat("check-circle-fill", "xanh", da_thu|tien, "Đã thu") }}</div>
+    <div class="col-md-4">{{ stat("hourglass-split", "cam", chua_thu|tien, "Chưa thu") }}</div>
+</div>
+
+<div class="card-ktx">
+    <div class="card-head"><i class="bi bi-receipt"></i> Danh sách hóa đơn</div>
+    <div class="table-responsive">
+        <table class="table bang-ktx">
+            <thead>
+                <tr><th>Sinh viên</th><th>Phòng</th><th>Tiền phòng</th><th>Dịch vụ</th><th>Vé xe</th><th>Phí xe</th><th>Tổng cộng</th><th>Trạng thái</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for d in ds %}
+                <tr>
+                    <td><div class="fw-semibold">{{ d.HoTen }}</div><small class="text-muted">{{ d.MaSV }} · {{ d.Lop }}</small></td>
+                    <td>{{ d.Phong }}</td>
+                    <td>{{ d.TienPhong|tien }}</td>
+                    <td>{{ d.TienDV|tien }}</td>
+                    <td>{{ d.TienVe|tien }}</td>
+                    <td>{{ d.TienPhi|tien }}</td>
+                    <td class="fw-bold">{{ d.Tong|tien }}</td>
+                    <td>{% if d.DaThu %}<span class="tag tag-ok">Đã thu</span>{% else %}<span class="tag tag-warn">Chưa thu</span>{% endif %}</td>
+                    <td class="text-end">
+                        <a class="btn btn-sm btn-nhat" href="{{ url_for('hoadon_chitiet', masv=d.MaSV, thang=thang, nam=nam) }}">Chi tiết</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="9" class="text-center text-muted py-4">Không có khoản phải thu nào trong tháng này.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

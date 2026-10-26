@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Doanh thu · KTX Manager{% endblock %}
+
+{% block content %}
+{% from "_macros.html" import stat, tieu_de %}
+{{ tieu_de("Doanh thu dịch vụ năm " ~ nam, "Doanh thu của từng dịch vụ trong từng tháng.") }}
+
+<div class="card-ktx mb-4">
+    <div class="card-body-ktx">
+        <form method="GET" action="{{ url_for('doanhthu') }}" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="nam" class="form-label">Năm</label>
+                <select class="form-select" id="nam" name="nam">
+                    {% for n in ds_nam %}<option value="{{ n }}" {% if n == nam %}selected{% endif %}>{{ n }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2"><button type="submit" class="btn btn-chinh w-100">Xem</button></div>
+            <div class="col-md-4 ms-auto text-end">
+                <span class="tag tag-info fs-6">Tổng cả năm: {{ tong_nam|tien }}</span>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card-ktx">
+    <div class="card-head"><i class="bi bi-graph-up-arrow"></i> Doanh thu theo dịch vụ và tháng</div>
+    <div class="table-responsive">
+        <table class="table bang-ktx">
+            <thead>
+                <tr>
+                    <th>Dịch vụ</th>
+                    {% for t in range(1, 13) %}<th class="{% if t == thang_ht %}text-primary{% endif %}">T{{ t }}</th>{% endfor %}
+                    <th>Cả năm</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for h in hang %}
+                <tr>
+                    <td class="fw-semibold">{{ h.TenDV }}<br><small class="text-muted">{{ h.MaDV }} · {{ h.DonViTinh }}</small></td>
+                    {% for v in h.Thang %}<td>{% if v %}{{ v|tien }}{% else %}<span class="text-muted">–</span>{% endif %}</td>{% endfor %}
+                    <td class="fw-bold">{{ h.Tong|tien }}</td>
+                </tr>
+                {% endfor %}
+                <tr>
+                    <td class="fw-bold">Tổng</td>
+                    {% for v in tong_thang %}<td class="fw-bold">{% if v %}{{ v|tien }}{% else %}<span class="text-muted">–</span>{% endif %}</td>{% endfor %}
+                    <td class="fw-bold">{{ tong_nam|tien }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<small class="text-muted d-block mt-3">Doanh thu chỉ tính các dịch vụ trong danh mục dịch vụ. Tiền phòng và vé tháng xe nằm ở trang Hóa đơn.</small>
+{% endblock %}

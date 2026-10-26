@@ -1,52 +1,40 @@
 {% extends "base.html" %}
-{% block title %}Khách thăm · Quản lý KTX{% endblock %}
+{% block title %}Khách thăm · KTX Manager{% endblock %}
 
 {% block content %}
-<div class="tieu-de-trang mb-4">
-    <h1>Khách đến thăm</h1>
-    <p>Ghi nhận lượt thăm và thống kê số lần mỗi khách đến theo tuần hoặc tháng.</p>
-</div>
+{% from "_macros.html" import stat, tieu_de %}
+{{ tieu_de("Khách thăm", "Ghi nhận lượt thăm và thống kê số lần mỗi khách đến theo tuần hoặc tháng.") }}
 
-<!-- Form ghi nhận lượt thăm -->
 <div class="card-ktx mb-4">
     <div class="card-head"><i class="bi bi-person-plus-fill"></i> Ghi nhận lượt thăm</div>
     <div class="card-body-ktx">
-        <form method="POST" action="{{ url_for('khach') }}" class="row g-3"
-            id="formLuotTham" data-khach='{{ ds_khach|tojson|forceescape }}'>
+        <form method="POST" action="{{ url_for('khach') }}" class="row g-3" id="formLuotTham"
+              data-khach="{{ ds_khach|tojson|forceescape }}">
             <div class="col-md-3">
                 <label for="cmt" class="form-label">Số CMT/CCCD khách *</label>
-                <input type="text" class="form-control" id="cmt" name="CMTKhach" list="dsCMT"
-                       pattern="[0-9]{9,12}" title="Gồm 9 đến 12 chữ số" autocomplete="off"
-                       value="{{ form.get('CMTKhach', '') }}" required>
+                <input type="text" class="form-control" id="cmt" name="CMTKhach" list="dsCMT" pattern="[0-9]{9,12}"
+                       title="Gồm 9 đến 12 chữ số" autocomplete="off" value="{{ form.get('CMTKhach', '') }}" required>
                 <datalist id="dsCMT">
-                    {% for k in ds_khach %}
-                    <option value="{{ k.CMTKhach }}">{{ k.HoTen }}</option>
-                    {% endfor %}
+                    {% for k in ds_khach %}<option value="{{ k.CMTKhach }}">{{ k.HoTen }}</option>{% endfor %}
                 </datalist>
             </div>
             <div class="col-md-4">
                 <label for="hoten" class="form-label">Họ tên khách *</label>
-                <input type="text" class="form-control" id="hoten" name="HoTen"
-                       value="{{ form.get('HoTen', '') }}">
+                <input type="text" class="form-control" id="hoten" name="HoTen" value="{{ form.get('HoTen', '') }}">
             </div>
             <div class="col-md-3">
                 <label for="ngaysinh" class="form-label">Ngày sinh khách *</label>
-                <input type="date" class="form-control" id="ngaysinh" name="NgaySinh"
-                       value="{{ form.get('NgaySinh', '') }}">
+                <input type="date" class="form-control" id="ngaysinh" name="NgaySinh" value="{{ form.get('NgaySinh', '') }}">
             </div>
             <div class="col-md-2">
                 <label for="sdt" class="form-label">SĐT</label>
-                <input type="tel" class="form-control" id="sdt" name="SDT"
-                       value="{{ form.get('SDT', '') }}">
+                <input type="tel" class="form-control" id="sdt" name="SDT" value="{{ form.get('SDT', '') }}">
             </div>
-
             <div class="col-md-5">
                 <label for="masv" class="form-label">Sinh viên được thăm *</label>
                 <select class="form-select" id="masv" name="MaSV" required>
                     {% for sv in ds_sv %}
-                    <option value="{{ sv.MaSV }}" {% if form.get('MaSV') == sv.MaSV %}selected{% endif %}>
-                        {{ sv.MaSV }} - {{ sv.HoTen }}
-                    </option>
+                    <option value="{{ sv.MaSV }}" {% if form.get('MaSV') == sv.MaSV %}selected{% endif %}>{{ sv.HoTen }} · {{ sv.MaSV }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -56,18 +44,13 @@
                        value="{{ form.get('ThoiDiemDen', bay_gio) }}" required>
             </div>
             <div class="col-md-3 d-flex align-items-end">
-                <button type="submit" class="btn btn-chinh w-100">
-                    <i class="bi bi-check2-circle"></i> Ghi nhận
-                </button>
+                <button type="submit" class="btn btn-chinh w-100"><i class="bi bi-check2-circle"></i> Ghi nhận</button>
             </div>
         </form>
-        <small id="ghiChuKhach" class="text-muted d-block mt-3">
-            Khách đã từng đến: nhập hoặc chọn số CMT, họ tên và ngày sinh sẽ tự điền.
-        </small>
+        <small id="ghiChuKhach" class="text-muted d-block mt-3">Khách đã từng đến: nhập hoặc chọn số CMT, họ tên và ngày sinh sẽ tự điền.</small>
     </div>
 </div>
 
-<!-- Bộ lọc kỳ thống kê -->
 <div class="card-ktx mb-4">
     <div class="card-head"><i class="bi bi-funnel-fill"></i> Thống kê theo kỳ</div>
     <div class="card-body-ktx">
@@ -84,114 +67,58 @@
                 <label for="ngay" class="form-label">Chọn ngày bất kỳ trong kỳ</label>
                 <input type="date" class="form-control" id="ngay" name="ngay" value="{{ ngay }}">
             </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-chinh w-100">Xem</button>
-            </div>
+            <div class="col-md-2"><button type="submit" class="btn btn-chinh w-100">Xem</button></div>
             <div class="col-md-4 text-muted">
-                {% if tu %}
-                Kỳ đang xem: <strong>{{ tu|ngay }} - {{ den|ngay }}</strong>
-                {% else %}
-                Đang xem toàn bộ lịch sử.
-                {% endif %}
+                {% if tu %}Kỳ đang xem: <strong>{{ tu|ngay }} - {{ den|ngay }}</strong>{% else %}Đang xem toàn bộ lịch sử.{% endif %}
             </div>
         </form>
     </div>
 </div>
 
-<!-- Thẻ thống kê -->
 <div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="card-ktx stat">
-            <div class="icon bg-tim"><i class="bi bi-door-open-fill"></i></div>
-            <div>
-                <div class="so">{{ ds_chitiet|length }}</div>
-                <div class="nhan">Lượt thăm trong kỳ</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card-ktx stat">
-            <div class="icon bg-xanh"><i class="bi bi-person-badge-fill"></i></div>
-            <div>
-                <div class="so">{{ so_khach }}</div>
-                <div class="nhan">Khách khác nhau</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card-ktx stat">
-            <div class="icon bg-cam"><i class="bi bi-people-fill"></i></div>
-            <div>
-                <div class="so">{{ so_sv }}</div>
-                <div class="nhan">Sinh viên được thăm</div>
-            </div>
-        </div>
-    </div>
+    <div class="col-md-4">{{ stat("door-open-fill", "tim", ds_chitiet|length, "Lượt thăm trong kỳ") }}</div>
+    <div class="col-md-4">{{ stat("person-badge-fill", "xanh", so_khach, "Khách khác nhau") }}</div>
+    <div class="col-md-4">{{ stat("people-fill", "cam", so_sv, "Sinh viên được thăm") }}</div>
 </div>
 
-<!-- Bảng thống kê: mỗi sinh viên, mỗi khách, số lần -->
 <div class="card-ktx mb-4">
     <div class="card-head"><i class="bi bi-bar-chart-fill"></i> Sinh viên và khách đến thăm (số lần)</div>
     <div class="table-responsive">
         <table class="table bang-ktx">
-            <thead>
-                <tr>
-                    <th>Sinh viên</th>
-                    <th>Lớp</th>
-                    <th>Khách</th>
-                    <th>CMT khách</th>
-                    <th>Số lần đến</th>
-                    <th>Lần gần nhất</th>
-                </tr>
-            </thead>
+            <thead><tr><th>Sinh viên</th><th>Lớp</th><th>Khách</th><th>CMT khách</th><th>Số lần đến</th><th>Lần gần nhất</th></tr></thead>
             <tbody>
                 {% for t in ds_thongke %}
                 <tr>
-                    <td>
-                        <span class="fw-semibold">{{ t.MaSV }}</span><br>
-                        <small class="text-muted">{{ t.HoTenSV }}</small>
-                    </td>
-                    <td><span class="tag-lop">{{ t.Lop }}</span></td>
+                    <td><div class="fw-semibold">{{ t.HoTenSV }}</div><small class="text-muted">{{ t.MaSV }}</small></td>
+                    <td><span class="tag tag-lop">{{ t.Lop }}</span></td>
                     <td>{{ t.HoTenKhach }}</td>
                     <td>{{ t.CMTKhach }}</td>
-                    <td><span class="badge text-bg-primary">{{ t.SoLan }} lần</span></td>
+                    <td><span class="tag tag-info">{{ t.SoLan }} lần</span></td>
                     <td>{{ t.LanCuoi|gio }}</td>
                 </tr>
                 {% else %}
-                <tr>
-                    <td colspan="6" class="text-center text-muted py-4">Không có lượt thăm nào trong kỳ này.</td>
-                </tr>
+                <tr><td colspan="6" class="text-center text-muted py-4">Không có lượt thăm nào trong kỳ này.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
 
-<!-- Chi tiết từng lượt -->
 <div class="card-ktx">
     <div class="card-head"><i class="bi bi-list-ul"></i> Chi tiết các lượt thăm trong kỳ</div>
     <div class="table-responsive">
         <table class="table bang-ktx">
-            <thead>
-                <tr>
-                    <th>Mã lượt</th>
-                    <th>Thời điểm đến</th>
-                    <th>Khách</th>
-                    <th>Sinh viên được thăm</th>
-                </tr>
-            </thead>
+            <thead><tr><th>Mã lượt</th><th>Thời điểm đến</th><th>Khách</th><th>Sinh viên được thăm</th></tr></thead>
             <tbody>
                 {% for l in ds_chitiet %}
                 <tr>
-                    <td>{{ l.MaLuotTham }}</td>
+                    <td>#{{ l.MaLuotTham }}</td>
                     <td>{{ l.ThoiDiemDen|gio }}</td>
                     <td>{{ l.HoTenKhach }} <small class="text-muted">({{ l.CMTKhach }})</small></td>
-                    <td>{{ l.MaSV }} - {{ l.HoTenSV }}</td>
+                    <td>{{ l.HoTenSV }} <small class="text-muted">{{ l.MaSV }}</small></td>
                 </tr>
                 {% else %}
-                <tr>
-                    <td colspan="4" class="text-center text-muted py-4">Chưa có lượt thăm nào.</td>
-                </tr>
+                <tr><td colspan="4" class="text-center text-muted py-4">Chưa có lượt thăm nào.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -202,7 +129,7 @@
 {% block scripts %}
 <script>
     // Khách cũ: nhập CMT thì tự điền họ tên, ngày sinh, SĐT và khóa các ô đó lại
-    const dsKhach = JSON.parse(document.getElementById("formLuotTham").dataset.khach);  
+    const dsKhach = JSON.parse(document.getElementById("formLuotTham").dataset.khach);
     const oCMT = document.getElementById("cmt");
     const oTen = document.getElementById("hoten");
     const oNgaySinh = document.getElementById("ngaysinh");
@@ -211,14 +138,13 @@
 
     function dongBoKhach() {
         const k = dsKhach.find(function (x) { return x.CMTKhach === oCMT.value.trim(); });
-        const laKhachCu = Boolean(k);
-        if (laKhachCu) {
+        if (k) {
             oTen.value = k.HoTen;
             oNgaySinh.value = k.NgaySinh;
             oSDT.value = k.SDT;
             ghiChu.textContent = "Khách đã có trong hệ thống: chỉ cần chọn sinh viên và thời điểm.";
         }
-        oTen.readOnly = oNgaySinh.readOnly = oSDT.readOnly = laKhachCu;
+        oTen.readOnly = oNgaySinh.readOnly = oSDT.readOnly = Boolean(k);
     }
     oCMT.addEventListener("input", dongBoKhach);
     dongBoKhach();

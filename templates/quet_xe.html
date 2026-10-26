@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Quẹt xe · KTX Manager{% endblock %}
+
+{% block content %}
+{% from "_macros.html" import stat, tieu_de %}
+{{ tieu_de("Quẹt xe vé tháng", "Camera đọc biển số, thẻ sinh viên cho xe đạp. Hệ thống tự nhận diện, tự chọn Gửi/Lấy và tự tính phí.") }}
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">{{ stat("arrow-left-right", "tim", so_luot, "Lượt quét hôm nay") }}</div>
+    <div class="col-md-4">{{ stat("cash-coin", "cam", tong_phi|tien, "Phí phát sinh hôm nay") }}</div>
+    <div class="col-md-4">{{ stat("shield-check", "xanh", mien_phi ~ " lượt", "Miễn phí/xe/ngày, sau đó " ~ (phi|tien) ~ "/lượt") }}</div>
+</div>
+
+<div class="card-ktx mb-4">
+    <div class="card-head"><i class="bi bi-upc-scan"></i> Cổng gửi xe</div>
+    <div class="card-body-ktx">
+        <form method="POST" action="{{ url_for('quet_xe') }}" class="row g-3" id="formQuet">
+            <div class="col-md-9">
+                <label for="maquet" class="form-label">Biển số xe hoặc mã thẻ sinh viên</label>
+                <input type="text" class="form-control o-quet" id="maquet" name="MaQuet"
+                       placeholder="Quét hoặc nhập rồi nhấn Enter..." autocomplete="off" autofocus required>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-chinh btn-lg w-100"><i class="bi bi-check2-circle"></i> Xác nhận</button>
+            </div>
+        </form>
+        <small class="text-muted d-block mt-3">Xe máy, xe điện: camera đọc biển số. Xe đạp: quẹt thẻ sinh viên. Xe vãng lai không lưu hệ thống.</small>
+    </div>
+</div>
+
+<div class="card-ktx mb-4">
+    <div class="card-head"><i class="bi bi-camera-video-fill"></i> Giả lập camera và đầu đọc thẻ (chỉ dùng khi demo)</div>
+    <div class="table-responsive">
+        <table class="table bang-ktx">
+            <thead><tr><th>Xe</th><th>Chủ xe</th><th>Nguồn quét</th><th>Hôm nay</th><th>Lượt tiếp theo</th><th></th></tr></thead>
+            <tbody>
+                {% for g in ds_gia_lap %}
+                <tr>
+                    <td><div class="fw-bold">{{ g.Nhan }}</div><small class="text-muted">{{ g.LoaiXe }}</small></td>
+                    <td>{{ g.HoTen }}</td>
+                    <td>{{ g.Nguon }}</td>
+                    <td>{{ g.SoLuot }} lượt</td>
+                    <td>
+                        <span class="tag tag-info">{{ g.TiepTheo }}</span>
+                        {% if g.PhiTiep %}<span class="tag tag-warn">Mất {{ g.PhiTiep|tien }}</span>
+                        {% else %}<span class="tag tag-ok">Miễn phí</span>{% endif %}
+                    </td>
+                    <td class="text-end">
+                        <button type="button" class="btn btn-sm btn-nhat nut-quet" data-ma="{{ g.MaQuet }}">
+                            <i class="bi bi-upc-scan"></i> Quét
+                        </button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-center text-muted py-4">Chưa có xe vé tháng nào.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card-ktx">
+    <div class="card-head"><i class="bi bi-clock-history"></i> Lượt quét gần đây</div>
+    <div class="table-responsive">
+        <table class="table bang-ktx">
+            <thead><tr><th>Thời điểm</th><th>Xe</th><th>Chủ xe</th><th>Phòng</th><th>Hành động</th><th>Phí</th><th></th></tr></thead>
+            <tbody>
+                {% for l in ds_gan_day %}
+                <tr>
+                    <td>{{ l.ThoiDiem|gio_giay }}</td>
+                    <td class="fw-bold">{{ l.BienSo }}</td>
+                    <td>{{ l.HoTen }}</td>
+                    <td>{{ l.Phong }}</td>
+                    <td>
+                        {% if l.LoaiHanhDong == 'Gui' %}<span class="tag tag-ok">Gửi</span>
+                        {% else %}<span class="tag tag-off">Lấy</span>{% endif %}
+                    </td>
+                    <td>{% if l.PhiPhatSinh %}<strong>{{ l.PhiPhatSinh|tien }}</strong>{% else %}0đ{% endif %}</td>
+                    <td class="text-end">
+                        <form method="POST" action="{{ url_for('xoa_luot_xe', ma=l.MaLuot) }}" data-confirm="Xóa lượt quét này?">
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" class="text-center text-muted py-4">Chưa có lượt quét nào.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const oQuet = document.getElementById("maquet");
+    const formQuet = document.getElementById("formQuet");
+
+    // Bấm "Quét" ở bảng giả lập: điền mã vào ô và gửi luôn, như camera vừa đọc xong
+    document.querySelectorAll(".nut-quet").forEach(function (nut) {
+        nut.addEventListener("click", function () {
+            oQuet.value = nut.dataset.ma;
+            formQuet.submit();
+        });
+    });
+    oQuet.focus();
+</script>
+{% endblock %}

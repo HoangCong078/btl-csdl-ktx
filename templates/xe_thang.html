@@ -1,13 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Gửi xe tháng · Quản lý KTX{% endblock %}
+{% block title %}Gửi xe tháng · KTX Manager{% endblock %}
 
 {% block content %}
-<div class="tieu-de-trang mb-4">
-    <h1>Gửi xe tháng</h1>
-    <p>Đăng ký vé tháng {{ gia|tien }}/xe. Mỗi sinh viên tối đa {{ toi_da }} xe còn hiệu lực.</p>
-</div>
+{% from "_macros.html" import tieu_de %}
+{{ tieu_de("Gửi xe tháng", "Vé " ~ (gia|tien) ~ "/xe, hạn 30 ngày. Mỗi sinh viên tối đa " ~ toi_da ~ " xe còn hạn.") }}
 
-<!-- Form đăng ký -->
 <div class="card-ktx mb-4">
     <div class="card-head"><i class="bi bi-bicycle"></i> Đăng ký vé tháng</div>
     <div class="card-body-ktx">
@@ -39,7 +36,6 @@
                     {% endfor %}
                 </select>
             </div>
-
             <div class="col-md-3">
                 <label for="loaixe" class="form-label">Loại xe *</label>
                 <select class="form-select" id="loaixe" name="LoaiXe">
@@ -50,70 +46,53 @@
             </div>
             <div class="col-md-3">
                 <label for="bienso" class="form-label">Biển số *</label>
-                <input type="text" class="form-control" id="bienso" name="BienSo"
-                       placeholder="29A1-12345" value="{{ form.get('BienSo', '') }}" required>
+                <input type="text" class="form-control" id="bienso" name="BienSo" placeholder="29A1-12345"
+                       value="{{ form.get('BienSo', '') }}" required>
             </div>
             <div class="col-md-3">
                 <label for="ngaybd" class="form-label">Ngày bắt đầu *</label>
-                <input type="date" class="form-control" id="ngaybd" name="NgayBatDau"
-                       value="{{ form.get('NgayBatDau', hom_nay) }}" required>
+                <input type="date" class="form-control" id="ngaybd" name="NgayBatDau" value="{{ form.get('NgayBatDau', hom_nay) }}" required>
             </div>
             <div class="col-md-3 d-flex align-items-end">
-                <button type="submit" class="btn btn-chinh w-100">
-                    <i class="bi bi-check2-circle"></i> Đăng ký
-                </button>
+                <button type="submit" class="btn btn-chinh w-100"><i class="bi bi-check2-circle"></i> Đăng ký</button>
             </div>
         </form>
         <small class="text-muted d-block mt-3">
-            Xe đạp không có biển số: hệ thống dùng mã sinh viên làm mã xe.
+            Vé có hạn 30 ngày kể từ ngày bắt đầu, hết hạn thì đăng ký lại. Xe đạp không có biển số: hệ thống dùng mã sinh viên.
             Mỗi xe được 2 lượt lấy/gửi miễn phí mỗi ngày, từ lượt thứ 3 mất 3.000đ/lượt.
         </small>
     </div>
 </div>
 
-<!-- Bảng xe đã đăng ký -->
 <div class="card-ktx">
     <div class="card-head justify-content-between flex-wrap gap-2">
-        <span><i class="bi bi-list-ul"></i> Xe đã đăng ký</span>
-        <input type="search" id="oTimKiem" class="form-control form-control-sm"
-               style="max-width: 260px" placeholder="Tìm biển số, tên, phòng...">
+        <span><i class="bi bi-list-ul"></i> Vé tháng đã đăng ký</span>
+        <input type="search" id="oTimKiem" data-bang="bangXe" class="form-control form-control-sm" style="max-width:260px"
+               placeholder="Tìm biển số, tên, phòng...">
     </div>
     <div class="table-responsive">
         <table class="table bang-ktx" id="bangXe">
-            <thead>
-                <tr>
-                    <th>Mã xe / Biển số</th>
-                    <th>Loại</th>
-                    <th>Sinh viên</th>
-                    <th>Phòng</th>
-                    <th>Từ ngày</th>
-                    <th>Đến ngày</th>
-                    <th>Trạng thái</th>
-                    <th></th>
-                </tr>
-            </thead>
+            <thead><tr><th>Mã xe / Biển số</th><th>Loại</th><th>Sinh viên</th><th>Phòng</th><th>Từ ngày</th><th>Đến ngày</th><th>Trạng thái</th><th></th></tr></thead>
             <tbody>
                 {% for d in ds_dk %}
                 <tr>
-                    <td class="fw-semibold">{{ d.BienSo }}</td>
+                    <td class="fw-bold">{{ d.BienSo }}</td>
                     <td>{{ d.LoaiXe }}</td>
-                    <td>{{ d.HoTen }}<br><small class="text-muted">{{ d.MaSV }}</small></td>
+                    <td><div class="fw-semibold">{{ d.HoTen }}</div><small class="text-muted">{{ d.MaSV }}</small></td>
                     <td>{{ d.Phong }}</td>
                     <td>{{ d.NgayBatDau|ngay }}</td>
                     <td>{{ d.NgayKetThuc|ngay }}</td>
-                    <td>
-                        {% if d.NgayKetThuc is none %}
-                        <span class="badge text-bg-success">Còn hiệu lực</span>
-                        {% else %}
-                        <span class="badge text-bg-secondary">Đã hủy</span>
-                        {% endif %}
+                                        <td>
+                        {% if d.ConHan %}<span class="tag tag-ok">Còn {{ d.ConNgay }} ngày</span>
+                        {% elif d.DaCoVeMoi %}<span class="tag tag-off">Đã gia hạn</span>
+                        {% else %}<span class="tag tag-bad">Hết hạn</span>{% endif %}
                     </td>
                     <td class="text-end">
-                        {% if d.NgayKetThuc is none %}
-                        <form method="POST" action="{{ url_for('huy_xe', ma=d.MaDKXe) }}"
-                              onsubmit="return confirm('Hủy vé tháng xe {{ d.BienSo }}?');">
-                            <button type="submit" class="btn btn-sm btn-outline-secondary">Hủy vé</button>
-                        </form>
+                        {% if not d.ConHan and not d.DaCoVeMoi %}
+                        <button type="button" class="btn btn-sm btn-nhat nut-dklai"
+                                data-masv="{{ d.MaSV }}" data-loai="{{ d.LoaiXe }}" data-bien="{{ d.BienSo }}">
+                            <i class="bi bi-arrow-repeat"></i> Đăng ký lại
+                        </button>
                         {% endif %}
                     </td>
                 </tr>
@@ -128,45 +107,28 @@
 
 {% block scripts %}
 <script>
-    // Chọn phòng/lớp thì ô sinh viên chỉ còn những người phù hợp
-    const locPhong = document.getElementById("locPhongForm");
-    const locLop = document.getElementById("locLopForm");
-    const oSV = document.getElementById("masv");
-
-    function locSinhVien() {
-        let conDangChon = false;
-        let dauTien = null;
-        Array.from(oSV.options).forEach(function (o) {
-            const khop = (!locPhong.value || o.dataset.phong === locPhong.value) &&
-                         (!locLop.value || o.dataset.lop === locLop.value);
-            o.hidden = !khop;
-            if (khop && !o.disabled && dauTien === null) dauTien = o;
-            if (khop && !o.disabled && o.selected) conDangChon = true;
-        });
-        if (!conDangChon && dauTien) dauTien.selected = true;
-    }
-    locPhong.addEventListener("change", locSinhVien);
-    locLop.addEventListener("change", locSinhVien);
-
-    // Xe đạp: không nhập biển số, hệ thống tự dùng mã sinh viên
     const oLoai = document.getElementById("loaixe");
     const oBien = document.getElementById("bienso");
 
+    // Xe đạp: không nhập biển số, hệ thống tự dùng mã sinh viên
     function capNhatBienSo() {
         const laXeDap = oLoai.value === "Xe đạp";
         oBien.disabled = laXeDap;
         oBien.required = !laXeDap;
         oBien.placeholder = laXeDap ? "Tự lấy theo mã sinh viên" : "29A1-12345";
-        if (laXeDap) oBien.value = "";
+        if (laXeDap) { oBien.value = ""; }
     }
     oLoai.addEventListener("change", capNhatBienSo);
     capNhatBienSo();
 
-    // Tìm nhanh trong bảng
-    document.getElementById("oTimKiem").addEventListener("input", function () {
-        const tuKhoa = this.value.toLowerCase();
-        document.querySelectorAll("#bangXe tbody tr").forEach(function (dong) {
-            dong.style.display = dong.textContent.toLowerCase().includes(tuKhoa) ? "" : "none";
+    // Vé hết hạn: bấm "Đăng ký lại" thì điền sẵn form
+    document.querySelectorAll(".nut-dklai").forEach(function (nut) {
+        nut.addEventListener("click", function () {
+            document.getElementById("masv").value = nut.dataset.masv;
+            oLoai.value = nut.dataset.loai;
+            capNhatBienSo();
+            if (nut.dataset.loai !== "Xe đạp") { oBien.value = nut.dataset.bien; }
+            window.scrollTo({ top: 0, behavior: "smooth" });
         });
     });
 </script>

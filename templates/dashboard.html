@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Tổng quan · KTX Manager{% endblock %}
+
+{% block content %}
+{% from "_macros.html" import stat, tieu_de %}
+{{ tieu_de("Tổng quan", "Tình hình ký túc xá hôm nay.") }}
+
+<div class="row g-3 mb-4">
+    <div class="col-md-6 col-xl-3">{{ stat("people-fill", "tim", so_sv, "Sinh viên nội trú") }}</div>
+    <div class="col-md-6 col-xl-3">{{ stat("door-open-fill", "xanh", dang_o ~ " / " ~ tong_cho, "Chỗ đang có người ở") }}</div>
+    <div class="col-md-6 col-xl-3">{{ stat("person-badge-fill", "cam", khach_hn, "Khách thăm hôm nay") }}</div>
+    <div class="col-md-6 col-xl-3">{{ stat("basket-fill", "hong", dv_thang|tien, "Tiền dịch vụ tháng này") }}</div>
+</div>
+
+<div class="row g-3">
+    <div class="col-xl-7">
+        <div class="card-ktx h-100">
+            <div class="card-head"><i class="bi bi-door-open-fill"></i> Tình trạng phòng</div>
+            <div class="card-body-ktx">
+                {% for p in ds_phong %}
+                {% set pt = (p.DangO * 100 / p.SoNguoiToiDa)|round|int %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="fw-semibold">{{ p.SoPhong }} <span class="tag tag-lop ms-1">{{ p.LoaiPhong }}</span></span>
+                        <small class="text-muted">{{ p.DangO }}/{{ p.SoNguoiToiDa }}{% if p.DangO >= p.SoNguoiToiDa %} · đã đầy{% endif %}</small>
+                    </div>
+                    <div class="progress progress-mong">
+                        <div class="progress-bar {% if pt >= 100 %}bg-danger{% elif pt >= 70 %}bg-warning{% else %}bg-success{% endif %}" data-width="{{ pt }}"></div>
+                    </div>
+                </div>
+                {% endfor %}
+                <a href="{{ url_for('dangky_o') }}" class="btn btn-chinh mt-2"><i class="bi bi-key-fill"></i> Xếp sinh viên vào phòng</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-5">
+        <div class="card-ktx h-100">
+            <div class="card-head"><i class="bi bi-clock-history"></i> Hoạt động gần đây</div>
+            {% for h in hoat_dong %}
+            <div class="hoat-dong">
+                <div class="icon ic-{{ h.Mau }}"><i class="bi bi-{{ h.Icon }}"></i></div>
+                <span>{{ h.Noi }}</span>
+                <span class="gio">{{ h.Gio[11:16] }} · {{ h.Gio[8:10] }}/{{ h.Gio[5:7] }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mt-1">
+    <div class="col-md-6">{{ stat("arrow-left-right", "troi", luot_hn, "Lượt quẹt xe hôm nay") }}</div>
+    <div class="col-md-6">{{ stat("cash-coin", "cam", phi_hn|tien, "Phí gửi xe phát sinh hôm nay") }}</div>
+</div>
+{% endblock %}

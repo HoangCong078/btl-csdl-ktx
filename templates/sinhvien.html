@@ -1,74 +1,40 @@
 {% extends "base.html" %}
-{% block title %}Sinh viên · Quản lý KTX{% endblock %}
+{% block title %}Sinh viên · KTX Manager{% endblock %}
 
 {% block content %}
-<div class="tieu-de-trang mb-4">
-    <h1>Quản lý sinh viên</h1>
-    <p>Thêm mới, tra cứu và xóa hồ sơ sinh viên nội trú.</p>
-</div>
+{% from "_macros.html" import stat, tieu_de %}
+{{ tieu_de("Sinh viên", "Thêm mới, tra cứu và xóa hồ sơ sinh viên nội trú.") }}
 
-<!-- Thẻ thống kê -->
 <div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="card-ktx stat">
-            <div class="icon bg-tim"><i class="bi bi-people-fill"></i></div>
-            <div>
-                <div class="so">{{ ds|length }}</div>
-                <div class="nhan">Tổng số sinh viên</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card-ktx stat">
-            <div class="icon bg-xanh"><i class="bi bi-mortarboard-fill"></i></div>
-            <div>
-                <div class="so">{{ ds|map(attribute='Lop')|unique|list|length }}</div>
-                <div class="nhan">Số lớp đang ở</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card-ktx stat">
-            <div class="icon bg-cam"><i class="bi bi-gender-ambiguous"></i></div>
-            <div>
-                <div class="so">
-                    {{ ds|selectattr('GioiTinh', 'equalto', 'Nam')|list|length }} /
-                    {{ ds|selectattr('GioiTinh', 'equalto', 'Nữ')|list|length }}
-                </div>
-                <div class="nhan">Nam / Nữ</div>
-            </div>
-        </div>
-    </div>
+    <div class="col-md-4">{{ stat("people-fill", "tim", ds|length, "Tổng số sinh viên") }}</div>
+    <div class="col-md-4">{{ stat("door-open-fill", "xanh", ds|selectattr('Phong')|list|length, "Đang có phòng") }}</div>
+    <div class="col-md-4">{{ stat("hourglass-split", "cam", ds|rejectattr('Phong')|list|length, "Chưa có phòng") }}</div>
 </div>
 
-<!-- Form thêm sinh viên -->
 <div class="card-ktx mb-4">
     <div class="card-head"><i class="bi bi-person-plus-fill"></i> Thêm sinh viên mới</div>
     <div class="card-body-ktx">
         <form method="POST" action="{{ url_for('sinhvien') }}" class="row g-3">
             <div class="col-md-3">
                 <label for="masv" class="form-label">Mã sinh viên *</label>
-                <input type="text" class="form-control" id="masv" name="MaSV"
-                       placeholder="B24DCCN004" value="{{ form.get('MaSV', '') }}" required>
+                <input type="text" class="form-control" id="masv" name="MaSV" placeholder="B24DCCN007"
+                       value="{{ form.get('MaSV', '') }}" required>
             </div>
             <div class="col-md-5">
                 <label for="hoten" class="form-label">Họ tên *</label>
-                <input type="text" class="form-control" id="hoten" name="HoTen"
-                       placeholder="Nguyễn Văn A" value="{{ form.get('HoTen', '') }}" required>
+                <input type="text" class="form-control" id="hoten" name="HoTen" placeholder="Nguyễn Văn A"
+                       value="{{ form.get('HoTen', '') }}" required>
             </div>
             <div class="col-md-4">
                 <label for="socmt" class="form-label">Số CMT/CCCD *</label>
-                <input type="text" class="form-control" id="socmt" name="SoCMT"
-                       pattern="[0-9]{9,12}" title="Gồm 9 đến 12 chữ số"
-                       placeholder="12 chữ số" value="{{ form.get('SoCMT', '') }}" required>
+                <input type="text" class="form-control" id="socmt" name="SoCMT" pattern="[0-9]{9,12}"
+                       title="Gồm 9 đến 12 chữ số" placeholder="12 chữ số" value="{{ form.get('SoCMT', '') }}" required>
             </div>
-
             <div class="col-md-3">
                 <label for="ngaysinh" class="form-label">Ngày sinh *</label>
-                <input type="date" class="form-control" id="ngaysinh" name="NgaySinh"
-                       value="{{ form.get('NgaySinh', '') }}" required>
+                <input type="date" class="form-control" id="ngaysinh" name="NgaySinh" value="{{ form.get('NgaySinh', '') }}" required>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label for="gioitinh" class="form-label">Giới tính</label>
                 <select class="form-select" id="gioitinh" name="GioiTinh">
                     {% for gt in ['Nam', 'Nữ', 'Khác'] %}
@@ -78,10 +44,9 @@
             </div>
             <div class="col-md-3">
                 <label for="sdt" class="form-label">Số điện thoại</label>
-                <input type="tel" class="form-control" id="sdt" name="SDT"
-                       placeholder="09xxxxxxxx" value="{{ form.get('SDT', '') }}">
+                <input type="tel" class="form-control" id="sdt" name="SDT" placeholder="09xxxxxxxx" value="{{ form.get('SDT', '') }}">
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <label for="lop" class="form-label">Lớp *</label>
                 <select class="form-select" id="lop" name="Lop">
                     {% for lop in ds_lop %}
@@ -89,82 +54,58 @@
                     {% endfor %}
                 </select>
             </div>
-
             <div class="col-md-9">
                 <label for="quequan" class="form-label">Quê quán</label>
-                <input type="text" class="form-control" id="quequan" name="QueQuan"
-                       placeholder="Tỉnh / thành phố" value="{{ form.get('QueQuan', '') }}">
+                <input type="text" class="form-control" id="quequan" name="QueQuan" placeholder="Tỉnh / thành phố"
+                       value="{{ form.get('QueQuan', '') }}">
             </div>
             <div class="col-md-3 d-flex align-items-end">
-                <button type="submit" class="btn btn-chinh w-100">
-                    <i class="bi bi-check2-circle"></i> Lưu sinh viên
-                </button>
+                <button type="submit" class="btn btn-chinh w-100"><i class="bi bi-check2-circle"></i> Lưu sinh viên</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Bảng danh sách -->
 <div class="card-ktx">
     <div class="card-head justify-content-between flex-wrap gap-2">
         <span><i class="bi bi-list-ul"></i> Danh sách sinh viên</span>
-        <input type="search" id="oTimKiem" class="form-control form-control-sm"
-               style="max-width: 280px" placeholder="Tìm theo mã, tên, lớp, quê quán...">
+        <input type="search" id="oTimKiem" data-bang="bangSV" class="form-control form-control-sm" style="max-width:280px"
+               placeholder="Tìm theo mã, tên, lớp, phòng...">
     </div>
     <div class="table-responsive">
         <table class="table bang-ktx" id="bangSV">
             <thead>
-                <tr>
-                    <th>Mã SV</th>
-                    <th>Họ tên</th>
-                    <th>Số CMT</th>
-                    <th>Ngày sinh</th>
-                    <th>Giới tính</th>
-                    <th>SĐT</th>
-                    <th>Lớp</th>
-                    <th>Quê quán</th>
-                    <th></th>
-                </tr>
+                <tr><th>Sinh viên</th><th>Số CMT</th><th>Ngày sinh</th><th>Lớp</th><th>Phòng</th><th>Quê quán</th><th></th></tr>
             </thead>
             <tbody>
                 {% for sv in ds %}
                 <tr>
-                    <td class="fw-semibold">{{ sv.MaSV }}</td>
-                    <td>{{ sv.HoTen }}</td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="avatar">{{ sv.HoTen.split()[-1][0] }}</span>
+                            <div>
+                                <div class="fw-semibold">{{ sv.HoTen }}</div>
+                                <small class="text-muted">{{ sv.MaSV }} · {{ sv.GioiTinh }}{% if sv.SDT %} · {{ sv.SDT }}{% endif %}</small>
+                            </div>
+                        </div>
+                    </td>
                     <td>{{ sv.SoCMT }}</td>
                     <td>{{ sv.NgaySinh|ngay }}</td>
-                    <td>{{ sv.GioiTinh }}</td>
-                    <td>{{ sv.SDT }}</td>
-                    <td><span class="tag-lop">{{ sv.Lop }}</span></td>
+                    <td><span class="tag tag-lop">{{ sv.Lop }}</span></td>
+                    <td>{% if sv.Phong %}<span class="tag tag-ok">{{ sv.Phong }}</span>{% else %}<span class="tag tag-off">Chưa có</span>{% endif %}</td>
                     <td>{{ sv.QueQuan }}</td>
                     <td class="text-end">
                         <form method="POST" action="{{ url_for('xoa_sinhvien', masv=sv.MaSV) }}"
-                              onsubmit="return confirm('Xóa sinh viên {{ sv.MaSV }}?');">
-                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa">
-                                <i class="bi bi-trash"></i>
-                            </button>
+                              data-confirm="Xóa sinh viên {{ sv.HoTen }} ({{ sv.MaSV }})?">
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa"><i class="bi bi-trash"></i></button>
                         </form>
                     </td>
                 </tr>
                 {% else %}
-                <tr>
-                    <td colspan="9" class="text-center text-muted py-4">Chưa có sinh viên nào.</td>
-                </tr>
+                <tr><td colspan="7" class="text-center text-muted py-4">Chưa có sinh viên nào.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-    // Lọc bảng ngay khi gõ, không cần tải lại trang
-    document.getElementById("oTimKiem").addEventListener("input", function () {
-        const tuKhoa = this.value.toLowerCase();
-        document.querySelectorAll("#bangSV tbody tr").forEach(function (dong) {
-            dong.style.display = dong.textContent.toLowerCase().includes(tuKhoa) ? "" : "none";
-        });
-    });
-</script>
 {% endblock %}
