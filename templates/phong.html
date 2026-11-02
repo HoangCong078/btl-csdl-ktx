@@ -1,85 +1,146 @@
 {% extends "base.html" %}
-{% block title %}Phòng ở · KTX Manager{% endblock %}
+{% block title %}Phòng · KTX{% endblock %}
 
 {% block content %}
-{% from "_macros.html" import stat, tieu_de %}
-{{ tieu_de("Phòng ở", "Danh mục phòng, đơn giá theo tháng và tình trạng lấp đầy.") }}
-
-<div class="row g-3 mb-4">
-    <div class="col-md-4">{{ stat("door-open-fill", "tim", ds|length, "Tổng số phòng") }}</div>
-    <div class="col-md-4">{{ stat("person-check-fill", "xanh", tong_dang_o ~ " / " ~ tong_cho, "Đang ở / Tổng chỗ") }}</div>
-    <div class="col-md-4">{{ stat("box-arrow-in-right", "cam", tong_cho - tong_dang_o, "Chỗ còn trống") }}</div>
-</div>
-
-<div class="card-ktx mb-4">
-    <div class="card-head"><i class="bi bi-plus-circle-fill"></i> Thêm phòng mới</div>
-    <div class="card-body-ktx">
-        <form method="POST" action="{{ url_for('phong') }}" class="row g-3">
-            <div class="col-md-2">
-                <label for="sophong" class="form-label">Số phòng *</label>
-                <input type="text" class="form-control" id="sophong" name="SoPhong" placeholder="P301"
-                       value="{{ form.get('SoPhong', '') }}" required>
-            </div>
-            <div class="col-md-3">
-                <label for="loaiphong" class="form-label">Loại phòng *</label>
-                <select class="form-select" id="loaiphong" name="LoaiPhong">
-                    {% for loai in ds_loai %}
-                    <option value="{{ loai }}" {% if form.get('LoaiPhong') == loai %}selected{% endif %}>{{ loai }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label for="dongia" class="form-label">Đơn giá / tháng (đ) *</label>
-                <input type="number" class="form-control" id="dongia" name="DonGia" min="1" step="1000"
-                       placeholder="500000" value="{{ form.get('DonGia', '') }}" required>
-            </div>
-            <div class="col-md-2">
-                <label for="toida" class="form-label">Số người tối đa *</label>
-                <input type="number" class="form-control" id="toida" name="SoNguoiToiDa" min="1" max="12"
-                       placeholder="4" value="{{ form.get('SoNguoiToiDa', '') }}" required>
-            </div>
-            <div class="col-md-2 d-flex align-items-end">
-                <button type="submit" class="btn btn-chinh w-100"><i class="bi bi-check2-circle"></i> Lưu</button>
-            </div>
-        </form>
-    </div>
-</div>
+{% from "_macros.html" import dau_trang, nut_xoa %}
+{% call dau_trang("Phòng") %}
+    <button type="button" class="btn btn-chinh" data-bs-toggle="modal" data-bs-target="#modalThem">
+        <i class="bi bi-plus-lg"></i> Thêm phòng
+    </button>
+{% endcall %}
 
 <div class="row g-3">
     {% for p in ds %}
     {% set pt = (p.DangO * 100 / p.SoNguoiToiDa)|round|int %}
     <div class="col-md-6 col-xl-4">
-        <div class="card-ktx phong-card">
-            <div class="d-flex justify-content-between align-items-start mb-2">
+        <div class="panel phong">
+            <div class="d-flex justify-content-between align-items-start">
                 <div>
-                    <div class="so-phong">{{ p.SoPhong }}</div>
+                    <div class="so">{{ p.SoPhong }}</div>
                     <span class="tag tag-lop">{{ p.LoaiPhong }}</span>
+                    <span class="text-muted small ms-1">{{ p.DonGia|tien }}/tháng</span>
                 </div>
-                <form method="POST" action="{{ url_for('xoa_phong', so_phong=p.SoPhong) }}"
-                      data-confirm="Xóa phòng {{ p.SoPhong }}?">
-                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa"><i class="bi bi-trash"></i></button>
-                </form>
+                {{ nut_xoa(url_for('xoa_phong', so_phong=p.SoPhong), 'Xóa phòng ' ~ p.SoPhong ~ '?') }}
             </div>
-            <div class="gia mb-3">{{ p.DonGia|tien }} / tháng</div>
-            <div class="d-flex justify-content-between mb-1">
-                <small class="text-muted">Đang ở</small>
-                <small class="fw-semibold">{{ p.DangO }}/{{ p.SoNguoiToiDa }}</small>
+
+            <div>
+                <div class="d-flex justify-content-between small mb-1">
+                    <span class="text-muted">Đang ở</span>
+                    <span class="fw-semibold">{{ p.DangO }}/{{ p.SoNguoiToiDa }}</span>
+                </div>
+                <div class="progress tien-do">
+                    <div class="progress-bar {% if pt >= 100 %}bg-danger{% elif pt >= 70 %}bg-warning{% else %}bg-success{% endif %}" data-width="{{ pt }}"></div>
+                </div>
             </div>
-            <div class="progress progress-mong">
-                <div class="progress-bar {% if pt >= 100 %}bg-danger{% elif pt >= 70 %}bg-warning{% else %}bg-success{% endif %}"
-                     data-width="{{ pt }}"></div>
-            </div>
-            <div class="mt-2">
-                {% if p.DangO >= p.SoNguoiToiDa %}
-                <span class="tag tag-bad">Đã đầy</span>
+
+            <div class="flex-grow-1">
+                {% for n in p.Nguoi %}
+                <div class="nguoi">
+                    <span>{{ n.HoTen }} <span class="text-muted small">{{ n.MaSV }}</span></span>
+                    <form method="POST" action="{{ url_for('tra_phong', ma_dko=n.MaDKO) }}" data-confirm="Trả phòng cho {{ n.HoTen }}?">
+                        <button type="submit" class="btn-icon" title="Trả phòng"><i class="bi bi-box-arrow-left"></i></button>
+                    </form>
+                </div>
                 {% else %}
-                <span class="tag tag-ok">Còn {{ p.SoNguoiToiDa - p.DangO }} chỗ</span>
-                {% endif %}
+                <div class="text-muted small">Chưa có ai.</div>
+                {% endfor %}
             </div>
+
+            {% if p.DangO >= p.SoNguoiToiDa %}
+            <button type="button" class="btn btn-light w-100" disabled>Đã đầy</button>
+            {% else %}
+            <button type="button" class="btn btn-nhat w-100" data-bs-toggle="modal" data-bs-target="#modalXep" data-phong="{{ p.SoPhong }}">
+                <i class="bi bi-person-plus"></i> Xếp người
+            </button>
+            {% endif %}
         </div>
     </div>
     {% else %}
-    <div class="col-12"><div class="card-ktx p-4 text-center text-muted">Chưa có phòng nào.</div></div>
+    <div class="col-12"><div class="panel p-4 text-center text-muted">Chưa có phòng.</div></div>
     {% endfor %}
 </div>
+
+<!-- Hộp xếp người vào phòng -->
+<div class="modal fade" id="modalXep" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('xep_phong') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Xếp người vào phòng <span id="xepTen"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body row g-3">
+                    <input type="hidden" name="SoPhong" id="xepSoPhong">
+                    <div class="col-12">
+                        <label for="xepSV" class="form-label">Sinh viên (chưa có phòng)</label>
+                        <select class="form-select" id="xepSV" name="MaSV" required>
+                            {% for sv in ds_sv_trong %}
+                            <option value="{{ sv.MaSV }}">{{ sv.HoTen }} · {{ sv.MaSV }}</option>
+                            {% else %}
+                            <option value="" disabled selected>Ai cũng đã có phòng</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label for="xepNgay" class="form-label">Ngày vào ở</label>
+                        <input type="date" class="form-control" id="xepNgay" name="NgayBatDau" value="{{ hom_nay }}" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-chinh" {% if not ds_sv_trong %}disabled{% endif %}>Xếp</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Hộp thêm phòng -->
+<div class="modal fade" id="modalThem" tabindex="-1" aria-hidden="true" data-mo="{{ '1' if form else '' }}">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('phong') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Thêm phòng</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body row g-3">
+                    <div class="col-6">
+                        <label for="sophong" class="form-label">Số phòng *</label>
+                        <input type="text" class="form-control" id="sophong" name="SoPhong" placeholder="P301" value="{{ form.get('SoPhong', '') }}" required>
+                    </div>
+                    <div class="col-6">
+                        <label for="loaiphong" class="form-label">Loại phòng</label>
+                        <select class="form-select" id="loaiphong" name="LoaiPhong">
+                            {% for loai in ds_loai %}<option value="{{ loai }}" {% if form.get('LoaiPhong') == loai %}selected{% endif %}>{{ loai }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label for="dongia" class="form-label">Đơn giá/tháng (đ) *</label>
+                        <input type="number" class="form-control" id="dongia" name="DonGia" min="1" step="1000" value="{{ form.get('DonGia', '') }}" required>
+                    </div>
+                    <div class="col-6">
+                        <label for="toida" class="form-label">Số người tối đa *</label>
+                        <input type="number" class="form-control" id="toida" name="SoNguoiToiDa" min="1" max="12" value="{{ form.get('SoNguoiToiDa', '') }}" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-chinh">Lưu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Bấm "Xếp người" ở phòng nào thì điền sẵn phòng đó vào hộp
+    document.getElementById("modalXep").addEventListener("show.bs.modal", function (e) {
+        const so = e.relatedTarget.dataset.phong;
+        document.getElementById("xepSoPhong").value = so;
+        document.getElementById("xepTen").textContent = so;
+    });
+</script>
 {% endblock %}
