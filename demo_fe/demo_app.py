@@ -356,7 +356,6 @@ def xe():
         ds_ve.append({
             **d, "HoTen": sv["HoTen"] if sv else "(đã xóa)", "LoaiXe": x["LoaiXe"] if x else "",
             "ConHan": con_han(d), "DaCoVeMoi": d["BienSo"] in bien_con_han,
-            "ConNgay": (datetime.strptime(d["NgayKetThuc"], "%Y-%m-%d") - hom_nay_dt).days,
             "SoLuot": luot_trong_ngay(d["MaDKXe"], hom_nay),
             "TiepTheo": "Gửi" if hanh_dong_tiep(d["MaDKXe"]) == "Gui" else "Lấy",
             "PhiTiep": phi_luot_tiep(d["MaDKXe"], hom_nay)})
@@ -430,8 +429,21 @@ def xe_thang():
             ds_xe.append({"BienSo": bien_so, "LoaiXe": loai})
         ma_moi = max((d["MaDKXe"] for d in ds_dk_xe), default=0) + 1
         ds_dk_xe.append({"MaDKXe": ma_moi, "MaSV": masv, "BienSo": bien_so, "NgayBatDau": ngay,
-                         "NgayKetThuc": ngay_het_han(ngay), "DonGiaThangApDung": GIA_VE_THANG})
-        flash(f"Đã đăng ký vé cho xe {bien_so}, hạn đến {f_ngay(ngay_het_han(ngay))}.", "success")
+            "NgayKetThuc": None, "DonGiaThangApDung": GIA_VE_THANG})
+        flash(f"Đã đăng ký vé tháng cho xe {bien_so}.", "success")
+    return redirect(url_for("xe"))
+
+
+@app.route("/xe/huy/<int:ma>", methods=["POST"])
+def huy_xe(ma):
+    d = next((x for x in ds_dk_xe if x["MaDKXe"] == ma), None)
+    if d is None:
+        flash("Không tìm thấy vé.", "danger")
+    elif d["NgayKetThuc"] is not None:
+        flash("Vé này đã hủy rồi.", "danger")
+    else:
+        d["NgayKetThuc"] = max(ngay_moc(0), d["NgayBatDau"])
+        flash(f"Đã hủy vé xe {d['BienSo']}.", "warning")
     return redirect(url_for("xe"))
 
 

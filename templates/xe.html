@@ -21,7 +21,7 @@
             <button type="submit" class="btn btn-chinh w-100 h-100"><i class="bi bi-upc-scan"></i> Quét</button>
         </div>
     </form>
-    <small class="text-muted d-block mt-2">Miễn phí {{ mien_phi }} lượt/xe/ngày, từ lượt tiếp theo {{ phi|tien }}/lượt. Vé {{ gia|tien }}, hạn 30 ngày.</small>
+    <small class="text-muted d-block mt-2">Miễn phí {{ mien_phi }} lượt/xe/ngày, từ lượt tiếp theo {{ phi|tien }}/lượt. Vé {{ gia|tien }}/tháng., hạn 30 ngày.</small>
 </div>
 
 <div class="panel">
@@ -40,10 +40,10 @@
                             <td><div class="fw-semibold">{{ d.BienSo }}</div><span class="phu">{{ d.LoaiXe }}</span></td>
                             <td>{{ d.HoTen }}<span class="phu">{{ d.MaSV }}</span></td>
                             <td>
-                                {% if d.ConHan %}<span class="tag tag-ok">Còn {{ d.ConNgay }} ngày</span>
-                                {% elif d.DaCoVeMoi %}<span class="tag tag-mute">Đã gia hạn</span>
-                                {% else %}<span class="tag tag-bad">Hết hạn</span>{% endif %}
-                                <span class="phu">{{ d.NgayBatDau|ngay }} – {{ d.NgayKetThuc|ngay }}</span>
+                                {% if d.ConHan %}<span class="tag tag-ok">Đang hiệu lực</span>
+                                <span class="phu">Từ {{ d.NgayBatDau|ngay }}</span>
+                                {% else %}<span class="tag tag-mute">Đã hủy</span>
+                                <span class="phu">{{ d.NgayBatDau|ngay }} – {{ d.NgayKetThuc|ngay }}</span>{% endif %}
                             </td>
                             <td class="d-none d-md-table-cell">
                                 {% if d.ConHan %}
@@ -54,6 +54,9 @@
                             <td class="text-end">
                                 {% if d.ConHan %}
                                 <button type="button" class="btn btn-sm btn-nhat nut-quet" data-ma="{{ d.BienSo }}"><i class="bi bi-upc-scan"></i> Quét</button>
+                                <form method="POST" action="{{ url_for('huy_xe', ma=d.MaDKXe) }}" data-confirm="Hủy vé xe {{ d.BienSo }}?" class="d-inline">
+                                    <button type="submit" class="btn-icon btn-xoa" title="Hủy vé"><i class="bi bi-x-circle"></i></button>
+                                </form>
                                 {% elif not d.DaCoVeMoi %}
                                 <button type="button" class="btn btn-sm btn-nhat nut-dklai" data-masv="{{ d.MaSV }}" data-loai="{{ d.LoaiXe }}" data-bien="{{ d.BienSo }}">
                                     <i class="bi bi-arrow-repeat"></i> Đăng ký lại

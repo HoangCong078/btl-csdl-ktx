@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 
 # ===================== HẰNG SỐ =====================
 GIA_VE_THANG = 100000
-HAN_VE_NGAY = 30        # vé tháng có hạn 30 ngày kể từ ngày bắt đầu
 TOI_DA_XE = 2           # mỗi sinh viên tối đa 2 xe còn hạn
 MIEN_PHI_NGAY = 2       # 2 lượt gửi/lấy miễn phí mỗi xe mỗi ngày
 PHI_PHAT_SINH = 3000    # từ lượt thứ 3 trong ngày
@@ -20,12 +19,6 @@ def ngay_moc(offset=0):
 
 def moc(offset=0, gio="08:00"):
     return f"{ngay_moc(offset)} {gio}"
-
-
-def ngay_het_han(ngay_bd):
-    """Vé tháng: ngày bắt đầu + 29 ngày."""
-    d = datetime.strptime(ngay_bd, "%Y-%m-%d") + timedelta(days=HAN_VE_NGAY - 1)
-    return d.strftime("%Y-%m-%d")
 
 
 # ===================== DỮ LIỆU GIẢ =====================
@@ -115,17 +108,17 @@ ds_xe = [
     {"BienSo": "29MD-11111", "LoaiXe": "Xe điện"},
 ]
 
-# Vé tháng hạn 30 ngày: NgayKetThuc = NgayBatDau + 29.
-# B24DCCN001 đủ 2 xe còn hạn (thử chặn xe thứ 3); xe 29MD-11111 của B24DCCN003 đã hết hạn (thử "Đăng ký lại").
+# NgayKetThuc = None nghĩa là vé còn hiệu lực; hủy vé thì điền ngày kết thúc.
+# B24DCCN001 đủ 2 xe (thử chặn xe thứ 3); vé xe 29MD-11111 của B24DCCN003 đã hủy.
 ds_dk_xe = [
-    {"MaDKXe": 1, "MaSV": "B24DCCN001", "BienSo": "29A1-12345", "NgayBatDau": ngay_moc(-10),
-     "NgayKetThuc": ngay_het_han(ngay_moc(-10)), "DonGiaThangApDung": GIA_VE_THANG},
-    {"MaDKXe": 2, "MaSV": "B24DCCN001", "BienSo": "XD-B24DCCN001", "NgayBatDau": ngay_moc(-10),
-     "NgayKetThuc": ngay_het_han(ngay_moc(-10)), "DonGiaThangApDung": GIA_VE_THANG},
-    {"MaDKXe": 3, "MaSV": "B24DCCN002", "BienSo": "29B2-67890", "NgayBatDau": ngay_moc(-5),
-     "NgayKetThuc": ngay_het_han(ngay_moc(-5)), "DonGiaThangApDung": GIA_VE_THANG},
+    {"MaDKXe": 1, "MaSV": "B24DCCN001", "BienSo": "29A1-12345", "NgayBatDau": ngay_moc(-40),
+     "NgayKetThuc": None, "DonGiaThangApDung": GIA_VE_THANG},
+    {"MaDKXe": 2, "MaSV": "B24DCCN001", "BienSo": "XD-B24DCCN001", "NgayBatDau": ngay_moc(-40),
+     "NgayKetThuc": None, "DonGiaThangApDung": GIA_VE_THANG},
+    {"MaDKXe": 3, "MaSV": "B24DCCN002", "BienSo": "29B2-67890", "NgayBatDau": ngay_moc(-30),
+     "NgayKetThuc": None, "DonGiaThangApDung": GIA_VE_THANG},
     {"MaDKXe": 4, "MaSV": "B24DCCN003", "BienSo": "29MD-11111", "NgayBatDau": ngay_moc(-45),
-     "NgayKetThuc": ngay_het_han(ngay_moc(-45)), "DonGiaThangApDung": GIA_VE_THANG},
+     "NgayKetThuc": ngay_moc(-30), "DonGiaThangApDung": GIA_VE_THANG},
 ]
 
 # Xe 29A1-12345: hôm qua 4 lượt (lượt 3, 4 mất phí), hôm nay 2 lượt -> lượt tiếp theo mất 3.000đ
@@ -178,9 +171,9 @@ def phong_cua():
 
 # ===================== XE VÉ THÁNG =====================
 def con_han(d, ngay=None):
-    """Vé còn hiệu lực khi ngày nằm trong [NgayBatDau, NgayKetThuc]."""
+    """Vé còn hiệu lực khi ngày nằm trong [NgayBatDau, NgayKetThuc]; NgayKetThuc NULL = chưa hủy."""
     ngay = ngay or ngay_moc(0)
-    return d["NgayBatDau"] <= ngay <= d["NgayKetThuc"]
+    return d["NgayBatDau"] <= ngay <= (d["NgayKetThuc"] or "9999-12-31")
 
 
 def dem_xe_hieu_luc(masv):
@@ -238,8 +231,7 @@ def nhan_dien_xe(ma_quet):
         if not xe_dap:
             return None, f"Sinh viên {sv['MaSV']} không có xe đạp vé tháng còn hạn."
         return min(xe_dap, key=lambda d: d["MaDKXe"]), None
-    return None, (f"Không nhận diện được '{ma_quet.strip()}': không phải xe vé tháng. "
-                  "Xe vãng lai thu tiền trực tiếp, không lưu hệ thống.")
+    return None, f"Vé tháng của xe {ma_quet.strip()} đã bị hủy, cần đăng ký lại."
 
 
 # ===================== THỜI GIAN VÀ HÓA ĐƠN =====================
@@ -287,11 +279,11 @@ def tinh_hoa_don(masv, thang, nam):
                    "DienGiai": f"Dịch vụ {dv['TenDV'] if dv else madv} ({dv['DonViTinh'] if dv else ''})",
                    "SoLuong": g["SoLuong"], "ThanhTien": g["ThanhTien"]})
 
-    # 3) Vé tháng xe: tính vào tháng của ngày bắt đầu
+    # 3) Vé tháng xe: mỗi tháng vé còn hiệu lực thì tính 1 lần (giống tiền phòng chẵn tháng)
     for d in ds_dk_xe:
-        if d["MaSV"] == masv and dau <= d["NgayBatDau"] <= cuoi:
-            ct.append({"Loai": "XeThang",
-                       "DienGiai": f"Vé tháng xe {d['BienSo']} (từ {d['NgayBatDau'][8:10]}/{d['NgayBatDau'][5:7]})",
+        het = d["NgayKetThuc"] or "9999-12-31"
+        if d["MaSV"] == masv and d["NgayBatDau"] <= cuoi and het >= dau:
+            ct.append({"Loai": "XeThang", "DienGiai": f"Vé tháng xe {d['BienSo']}",
                        "SoLuong": 1, "ThanhTien": d["DonGiaThangApDung"]})
 
     # 4) Phí gửi/lấy xe phát sinh (từ lượt thứ 3 trong ngày)
