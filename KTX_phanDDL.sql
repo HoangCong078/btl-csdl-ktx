@@ -3,7 +3,7 @@
 -- File: KTX_phanDDL.sql
 -- Phân việc: Người 1 (Trưởng nhóm) - DDL + Ràng buộc toàn vẹn + Trigger nghiệp vụ
 -- Hệ QTCSDL: MySQL 8.0.16+
--- Schema chuẩn: Khớp 100% với BAO_CAO_YC1.pdf và thuc_the_va_thuoc_tinh_FIXED_2.docx (12 bảng)
+-- Schema chuẩn: Khớp 100% với Chuong1_YC1.pdf và thuc_the_va_thuoc_tinh_FIXED.docx (12 bảng)
 --
 -- QUY ƯỚC NGHIỆP VỤ CHỐT TOÀN NHÓM:
 -- 1. Tiền phòng tính chẵn tháng: Chỉ cần khoảng thời gian đăng ký ở (NgayBatDau .. NgayKetThuc)
@@ -269,15 +269,17 @@ CREATE TABLE CHITIET_HOADON (
     CONSTRAINT fk_cthd_hoadon FOREIGN KEY (MaHD)
         REFERENCES HOADON(MaHD)
         ON UPDATE CASCADE ON DELETE CASCADE,
+    -- Lưu ý: 3 FK nguồn (MaDKO, MaSuDung, MaLuot) nằm trong CHECK chk_cthd_mot_nguon nên phải dùng
+    -- RESTRICT; MySQL không cho ON UPDATE/DELETE CASCADE/SET NULL trên cột có CHECK (lỗi 3823).
     CONSTRAINT fk_cthd_dko FOREIGN KEY (MaDKO)
         REFERENCES DANGKY_O(MaDKO)
-        ON UPDATE CASCADE ON DELETE RESTRICT,
+        ON UPDATE RESTRICT ON DELETE RESTRICT,
     CONSTRAINT fk_cthd_sudung FOREIGN KEY (MaSuDung)
         REFERENCES SUDUNG_DV(MaSuDung)
-        ON UPDATE CASCADE ON DELETE RESTRICT,
+        ON UPDATE RESTRICT ON DELETE RESTRICT,
     CONSTRAINT fk_cthd_luotxe FOREIGN KEY (MaLuot)
         REFERENCES LUOT_RA_VAO_XE(MaLuot)
-        ON UPDATE CASCADE ON DELETE RESTRICT,
+        ON UPDATE RESTRICT ON DELETE RESTRICT,
     CONSTRAINT chk_cthd_soluong   CHECK (SoLuong > 0),
     CONSTRAINT chk_cthd_dongia    CHECK (DonGiaApDung >= 0),
     CONSTRAINT chk_cthd_thanhtien CHECK (ThanhTien >= 0),
@@ -705,57 +707,127 @@ FOR EACH ROW
 BEGIN
     DECLARE v_sv_hoadon VARCHAR(20) DEFAULT NULL;
     DECLARE v_sv_nguon VARCHAR(20) DEFAULT NULL;
-    DECLARE v_hop_le_xe INT DEFAULT 0;
+    DECLARE v_thang INT DEFAULT NULL;
+    DECLARE v_nam INT DEFAULT NULL;
+    DECLARE v_ngay_dau DATE;
+    DECLARE v_ngay_cuoi DATE;
+    DECLARE v_so_luong DECIMAL(10,2) DEFAULT 1;
+    DECLARE v_don_gia DECIMAL(12,2) DEFAULT NULL;
+    DECLARE v_so_dang_ky INT DEFAULT 0;
+    DECLARE v_tong_gia_xe DECIMAL(12,2) DEFAULT 0;
+    DECLARE v_not_found BOOLEAN DEFAULT FALSE;
+    DECLARE v_da_co INT DEFAULT 0;
 
-    SELECT MaSV INTO v_sv_hoadon
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET v_not_found = TRUE;
+
+    SELECT MaSV, Thang, Nam
+      INTO v_sv_hoadon, v_thang, v_nam
     FROM HOADON
     WHERE MaHD = NEW.MaHD;
 
+    IF v_not_found OR v_sv_hoadon IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Hoa don khong ton tai!';
+    END IF;
+
+    SET v_ngay_dau = STR_TO_DATE(
+        CONCAT(v_nam, '-', LPAD(v_thang, 2, '0'), '-01'), '%Y-%m-%d'
+    );
+    SET v_ngay_cuoi = LAST_DAY(v_ngay_dau);
+
     IF NEW.LoaiPhi = 'Phong' THEN
-        SELECT d.MaSV INTO v_sv_nguon
-        FROM DANGKY_O d
-        JOIN HOADON h ON h.MaHD = NEW.MaHD
-        WHERE d.MaDKO = NEW.MaDKO
-          AND d.NgayBatDau <= LAST_DAY(STR_TO_DATE(CONCAT(h.Nam, '-', LPAD(h.Thang, 2, '0'), '-01'), '%Y-%m-%d'))
-          AND COALESCE(d.NgayKetThuc, '9999-12-31') >= STR_TO_DATE(CONCAT(h.Nam, '-', LPAD(h.Thang, 2, '0'), '-01'), '%Y-%m-%d');
 
-    ELSEIF NEW.LoaiPhi = 'DichVu' THEN
-        SELECT sd.MaSV INTO v_sv_nguon
-        FROM SUDUNG_DV sd
-        JOIN HOADON h ON h.MaHD = NEW.MaHD
-        WHERE sd.MaSuDung = NEW.MaSuDung
-          AND YEAR(sd.ThoiDiemSuDung) = h.Nam
-          AND MONTH(sd.ThoiDiemSuDung) = h.Thang;
+        SET v_not_found = FALSE;
+        SELECT MaSV, DonGiaThangApDung
+          INTO v_sv_nguon, v_don_gia
+        FROM DANGKY_O
+        WHERE MaDKO = NEW.MaDKO
+          AND NgayBatDau <= v_ngay_cuoi
+          AND COALESCE(NgayKetThuc, '9999-12-31') >= v_ngay_dau;
 
-    ELSEIF NEW.LoaiPhi = 'XeThang' THEN
-        SELECT COUNT(*) INTO v_hop_le_xe
-        FROM DANGKY_XE_THANG d
-        JOIN HOADON h ON h.MaHD = NEW.MaHD
-        WHERE d.MaSV = h.MaSV
-          AND d.NgayBatDau <= LAST_DAY(STR_TO_DATE(CONCAT(h.Nam, '-', LPAD(h.Thang, 2, '0'), '-01'), '%Y-%m-%d'))
-          AND COALESCE(d.NgayKetThuc, '9999-12-31') >= STR_TO_DATE(CONCAT(h.Nam, '-', LPAD(h.Thang, 2, '0'), '-01'), '%Y-%m-%d');
-
-        IF v_hop_le_xe > 0 THEN
-            SET v_sv_nguon = v_sv_hoadon;
+        IF v_not_found THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Dang ky o khong hop le trong thang hoa don!';
         END IF;
 
+        SET v_so_luong = 1;
+
+    ELSEIF NEW.LoaiPhi = 'DichVu' THEN
+
+        SET v_not_found = FALSE;
+        SELECT MaSV, SoLuong, DonGiaApDung
+          INTO v_sv_nguon, v_so_luong, v_don_gia
+        FROM SUDUNG_DV
+        WHERE MaSuDung = NEW.MaSuDung
+          AND ThoiDiemSuDung >= v_ngay_dau
+          AND ThoiDiemSuDung < v_ngay_cuoi + INTERVAL 1 DAY;
+
+        IF v_not_found THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Luot su dung dich vu khong thuoc thang hoa don!';
+        END IF;
+
+    ELSEIF NEW.LoaiPhi = 'XeThang' THEN
+
+        SELECT COUNT(*), COALESCE(SUM(DonGiaThangApDung), 0)
+          INTO v_so_dang_ky, v_tong_gia_xe
+        FROM DANGKY_XE_THANG
+        WHERE MaSV = v_sv_hoadon
+          AND NgayBatDau <= v_ngay_cuoi
+          AND COALESCE(NgayKetThuc, '9999-12-31') >= v_ngay_dau;
+
+        IF v_so_dang_ky = 0 THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Sinh vien khong co dang ky xe thang trong ky hoa don!';
+        END IF;
+
+        SELECT COUNT(*) INTO v_da_co
+        FROM CHITIET_HOADON
+        WHERE MaHD = NEW.MaHD AND LoaiPhi = 'XeThang';
+
+        IF v_da_co > 0 THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Hoa don nay da co dong phi xe thang (da gop tat ca xe cua sinh vien)!';
+        END IF;
+
+        SET v_sv_nguon = v_sv_hoadon;
+        SET v_so_luong = 1;
+        SET v_don_gia = v_tong_gia_xe;
+
     ELSEIF NEW.LoaiPhi = 'XePhatSinh' THEN
-        -- Ánh xạ 1:1 theo MaLuot với lượt quẹt thực tế phát sinh 3.000đ trong kỳ hóa đơn
-        SELECT dk.MaSV INTO v_sv_nguon
+
+        SET v_not_found = FALSE;
+        SELECT dk.MaSV, l.PhiPhatSinh
+          INTO v_sv_nguon, v_don_gia
         FROM LUOT_RA_VAO_XE l
         JOIN DANGKY_XE_THANG dk ON dk.MaDKXe = l.MaDKXe
-        JOIN HOADON h ON h.MaHD = NEW.MaHD
         WHERE l.MaLuot = NEW.MaLuot
           AND l.PhiPhatSinh = 3000
-          AND YEAR(l.ThoiDiem) = h.Nam
-          AND MONTH(l.ThoiDiem) = h.Thang;
+          AND l.ThoiDiem >= v_ngay_dau
+          AND l.ThoiDiem < v_ngay_cuoi + INTERVAL 1 DAY;
+
+        IF v_not_found THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Luot ra vao xe khong thuoc thang hoa don hoac khong phat sinh phi 3000d!';
+        END IF;
+
+        SET v_so_luong = 1;
+
     END IF;
 
-    IF v_sv_hoadon IS NULL OR v_sv_nguon IS NULL OR v_sv_nguon <> v_sv_hoadon THEN
+    IF v_sv_nguon IS NULL OR v_sv_nguon <> v_sv_hoadon THEN
         SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Loi: Khoan phi khong thuoc sinh vien/ky hoa don hoac khong phat sinh chi phi!';
+        SET MESSAGE_TEXT = 'Nguon phi khong thuoc sinh vien cua hoa don!';
     END IF;
 
+    IF v_so_luong IS NULL OR v_so_luong <= 0
+       OR v_don_gia IS NULL OR v_don_gia < 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'So luong hoac don gia khong hop le!';
+    END IF;
+
+    SET NEW.SoLuong = v_so_luong;
+    SET NEW.DonGiaApDung = v_don_gia;
     SET NEW.ThanhTien = ROUND(NEW.SoLuong * NEW.DonGiaApDung, 2);
 END$$
 
@@ -765,56 +837,127 @@ FOR EACH ROW
 BEGIN
     DECLARE v_sv_hoadon VARCHAR(20) DEFAULT NULL;
     DECLARE v_sv_nguon VARCHAR(20) DEFAULT NULL;
-    DECLARE v_hop_le_xe INT DEFAULT 0;
+    DECLARE v_thang INT DEFAULT NULL;
+    DECLARE v_nam INT DEFAULT NULL;
+    DECLARE v_ngay_dau DATE;
+    DECLARE v_ngay_cuoi DATE;
+    DECLARE v_so_luong DECIMAL(10,2) DEFAULT 1;
+    DECLARE v_don_gia DECIMAL(12,2) DEFAULT NULL;
+    DECLARE v_so_dang_ky INT DEFAULT 0;
+    DECLARE v_tong_gia_xe DECIMAL(12,2) DEFAULT 0;
+    DECLARE v_not_found BOOLEAN DEFAULT FALSE;
+    DECLARE v_da_co INT DEFAULT 0;
 
-    SELECT MaSV INTO v_sv_hoadon
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET v_not_found = TRUE;
+
+    SELECT MaSV, Thang, Nam
+      INTO v_sv_hoadon, v_thang, v_nam
     FROM HOADON
     WHERE MaHD = NEW.MaHD;
 
+    IF v_not_found OR v_sv_hoadon IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Hoa don khong ton tai!';
+    END IF;
+
+    SET v_ngay_dau = STR_TO_DATE(
+        CONCAT(v_nam, '-', LPAD(v_thang, 2, '0'), '-01'), '%Y-%m-%d'
+    );
+    SET v_ngay_cuoi = LAST_DAY(v_ngay_dau);
+
     IF NEW.LoaiPhi = 'Phong' THEN
-        SELECT d.MaSV INTO v_sv_nguon
-        FROM DANGKY_O d
-        JOIN HOADON h ON h.MaHD = NEW.MaHD
-        WHERE d.MaDKO = NEW.MaDKO
-          AND d.NgayBatDau <= LAST_DAY(STR_TO_DATE(CONCAT(h.Nam, '-', LPAD(h.Thang, 2, '0'), '-01'), '%Y-%m-%d'))
-          AND COALESCE(d.NgayKetThuc, '9999-12-31') >= STR_TO_DATE(CONCAT(h.Nam, '-', LPAD(h.Thang, 2, '0'), '-01'), '%Y-%m-%d');
 
-    ELSEIF NEW.LoaiPhi = 'DichVu' THEN
-        SELECT sd.MaSV INTO v_sv_nguon
-        FROM SUDUNG_DV sd
-        JOIN HOADON h ON h.MaHD = NEW.MaHD
-        WHERE sd.MaSuDung = NEW.MaSuDung
-          AND YEAR(sd.ThoiDiemSuDung) = h.Nam
-          AND MONTH(sd.ThoiDiemSuDung) = h.Thang;
+        SET v_not_found = FALSE;
+        SELECT MaSV, DonGiaThangApDung
+          INTO v_sv_nguon, v_don_gia
+        FROM DANGKY_O
+        WHERE MaDKO = NEW.MaDKO
+          AND NgayBatDau <= v_ngay_cuoi
+          AND COALESCE(NgayKetThuc, '9999-12-31') >= v_ngay_dau;
 
-    ELSEIF NEW.LoaiPhi = 'XeThang' THEN
-        SELECT COUNT(*) INTO v_hop_le_xe
-        FROM DANGKY_XE_THANG d
-        JOIN HOADON h ON h.MaHD = NEW.MaHD
-        WHERE d.MaSV = h.MaSV
-          AND d.NgayBatDau <= LAST_DAY(STR_TO_DATE(CONCAT(h.Nam, '-', LPAD(h.Thang, 2, '0'), '-01'), '%Y-%m-%d'))
-          AND COALESCE(d.NgayKetThuc, '9999-12-31') >= STR_TO_DATE(CONCAT(h.Nam, '-', LPAD(h.Thang, 2, '0'), '-01'), '%Y-%m-%d');
-
-        IF v_hop_le_xe > 0 THEN
-            SET v_sv_nguon = v_sv_hoadon;
+        IF v_not_found THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Dang ky o khong hop le trong thang hoa don!';
         END IF;
 
+        SET v_so_luong = 1;
+
+    ELSEIF NEW.LoaiPhi = 'DichVu' THEN
+
+        SET v_not_found = FALSE;
+        SELECT MaSV, SoLuong, DonGiaApDung
+          INTO v_sv_nguon, v_so_luong, v_don_gia
+        FROM SUDUNG_DV
+        WHERE MaSuDung = NEW.MaSuDung
+          AND ThoiDiemSuDung >= v_ngay_dau
+          AND ThoiDiemSuDung < v_ngay_cuoi + INTERVAL 1 DAY;
+
+        IF v_not_found THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Luot su dung dich vu khong thuoc thang hoa don!';
+        END IF;
+
+    ELSEIF NEW.LoaiPhi = 'XeThang' THEN
+
+        SELECT COUNT(*), COALESCE(SUM(DonGiaThangApDung), 0)
+          INTO v_so_dang_ky, v_tong_gia_xe
+        FROM DANGKY_XE_THANG
+        WHERE MaSV = v_sv_hoadon
+          AND NgayBatDau <= v_ngay_cuoi
+          AND COALESCE(NgayKetThuc, '9999-12-31') >= v_ngay_dau;
+
+        IF v_so_dang_ky = 0 THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Sinh vien khong co dang ky xe thang trong ky hoa don!';
+        END IF;
+
+        SELECT COUNT(*) INTO v_da_co
+        FROM CHITIET_HOADON
+        WHERE MaHD = NEW.MaHD AND LoaiPhi = 'XeThang' AND MaCTHD <> OLD.MaCTHD;
+
+        IF v_da_co > 0 THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Hoa don nay da co dong phi xe thang (da gop tat ca xe cua sinh vien)!';
+        END IF;
+
+        SET v_sv_nguon = v_sv_hoadon;
+        SET v_so_luong = 1;
+        SET v_don_gia = v_tong_gia_xe;
+
     ELSEIF NEW.LoaiPhi = 'XePhatSinh' THEN
-        SELECT dk.MaSV INTO v_sv_nguon
+
+        SET v_not_found = FALSE;
+        SELECT dk.MaSV, l.PhiPhatSinh
+          INTO v_sv_nguon, v_don_gia
         FROM LUOT_RA_VAO_XE l
         JOIN DANGKY_XE_THANG dk ON dk.MaDKXe = l.MaDKXe
-        JOIN HOADON h ON h.MaHD = NEW.MaHD
         WHERE l.MaLuot = NEW.MaLuot
           AND l.PhiPhatSinh = 3000
-          AND YEAR(l.ThoiDiem) = h.Nam
-          AND MONTH(l.ThoiDiem) = h.Thang;
+          AND l.ThoiDiem >= v_ngay_dau
+          AND l.ThoiDiem < v_ngay_cuoi + INTERVAL 1 DAY;
+
+        IF v_not_found THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Luot ra vao xe khong thuoc thang hoa don hoac khong phat sinh phi 3000d!';
+        END IF;
+
+        SET v_so_luong = 1;
+
     END IF;
 
-    IF v_sv_hoadon IS NULL OR v_sv_nguon IS NULL OR v_sv_nguon <> v_sv_hoadon THEN
+    IF v_sv_nguon IS NULL OR v_sv_nguon <> v_sv_hoadon THEN
         SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Loi: Khoan phi khong thuoc sinh vien/ky hoa don hoac khong phat sinh chi phi!';
+        SET MESSAGE_TEXT = 'Nguon phi khong thuoc sinh vien cua hoa don!';
     END IF;
 
+    IF v_so_luong IS NULL OR v_so_luong <= 0
+       OR v_don_gia IS NULL OR v_don_gia < 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'So luong hoac don gia khong hop le!';
+    END IF;
+
+    SET NEW.SoLuong = v_so_luong;
+    SET NEW.DonGiaApDung = v_don_gia;
     SET NEW.ThanhTien = ROUND(NEW.SoLuong * NEW.DonGiaApDung, 2);
 END$$
 
