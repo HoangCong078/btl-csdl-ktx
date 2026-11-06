@@ -11,7 +11,7 @@ SET @hn = CURDATE();
 SET @hq = DATE_SUB(CURDATE(), INTERVAL 1 DAY);
 
 INSERT INTO PHONG VALUES
- ('P101', 'Thường', 500000, 4), ('P102', 'Thường', 500000, 2), ('P201', 'Chất lượng cao', 900000, 2);
+ ('P101', 'Thường', 500000, 4), ('P102', 'Thường', 500000, 2), ('P201', 'Chất lượng cao', 900000, 2),('V101','Hoàng Gia',5000000,1);
 
 INSERT INTO SINHVIEN (MaSV, HoTen, GioiTinh, SDT, SoCMT, NgaySinh, Lop, QueQuan) VALUES
  ('B24DCCN001', 'Nguyễn Văn An',  'Nam', '0901234567', '001206000001', '2006-03-21', 'B24CQCN01-B', 'Hà Nam'),
@@ -19,14 +19,18 @@ INSERT INTO SINHVIEN (MaSV, HoTen, GioiTinh, SDT, SoCMT, NgaySinh, Lop, QueQuan)
  ('B24DCCN003', 'Lê Văn Cường',   'Nam', '0987654321', '001205000003', '2005-11-30', 'B24CQCN03-B', 'Thanh Hóa'),
  ('B24DCCN004', 'Phạm Thị Dung',  'Nữ',  '0933111222', '001206000004', '2006-01-15', 'B24CQCN01-B', 'Hải Dương'),
  ('B24DCCN005', 'Hoàng Minh Đức', 'Nam', '0944555666', '001206000005', '2006-09-02', 'B24CQCN02-B', 'Nghệ An'),
- ('B24DCCN006', 'Vũ Thị Hà',      'Nữ',  NULL,         '001206000006', '2006-05-27', 'B24CQCN03-B', 'Bắc Ninh');
+ ('B24DCCN006', 'Vũ Thị Hà',      'Nữ',  NULL,         '001206000006', '2006-05-27', 'B24CQCN03-B', 'Bắc Ninh'),
+ ('B24DCCN007', 'Nguyễn Văn A',   'Nam', NULL,         '000000000001', '2006-01-01', 'B24CQCN03-B', 'Hà Nội'),
+ ('B24DCCN008', 'Nguyễn Văn B',   'Nam', NULL,         '000000000002', '2006-01-01', 'B24CQCN03-B', 'Hà Nội'),
+ ('B24DCCN009', 'Nguyễn Văn C',   'Nam', NULL,         '000000000003', '2006-01-01', 'B24CQCN03-B', 'Hà Lội');
 
 INSERT INTO DANGKY_O (MaSV, SoPhong, NgayBatDau, NgayKetThuc, DonGiaThangApDung) VALUES
  ('B24DCCN001', 'P101', DATE_SUB(@hn, INTERVAL 60 DAY), NULL, 500000),
  ('B24DCCN003', 'P101', DATE_SUB(@hn, INTERVAL 60 DAY), NULL, 500000),
  ('B24DCCN005', 'P101', DATE_SUB(@hn, INTERVAL 50 DAY), NULL, 500000),
  ('B24DCCN002', 'P102', DATE_SUB(@hn, INTERVAL 60 DAY), NULL, 500000),
- ('B24DCCN004', 'P102', DATE_SUB(@hn, INTERVAL 45 DAY), NULL, 500000);
+ ('B24DCCN004', 'P102', DATE_SUB(@hn, INTERVAL 45 DAY), NULL, 500000),
+ ('B24DCCN008', 'V101', DATE_SUB(@hn, INTERVAL 60 DAY), NULL, 5000000);
 
 INSERT INTO KHACH (CMTKhach, HoTen, NgaySinh, SDT) VALUES
  ('038200000001', 'Nguyễn Thị Lan', '1978-05-12', '0903111222'),
@@ -77,3 +81,69 @@ INSERT INTO LUOT_RA_VAO_XE (MaDKXe, ThoiDiem, LoaiHanhDong) VALUES
  (2, TIMESTAMP(@hq, '07:05:00'), 'Gui'), (2, TIMESTAMP(@hq, '17:20:00'), 'Lay'),
  (3, TIMESTAMP(@hq, '07:10:00'), 'Gui'), (3, TIMESTAMP(@hq, '17:25:00'), 'Lay'),
  (1, TIMESTAMP(@hn, '06:50:00'), 'Gui'), (1, TIMESTAMP(@hn, '07:30:00'), 'Lay');
+
+-- Ba hóa đơn mẫu của tháng chạy file: An, Bình đã thanh toán; Cường chưa thanh toán.
+-- Chỉ lấy các khoản thu thuộc kỳ hóa đơn, kể cả khi chạy vào đầu tháng/đầu năm.
+SET @dau_ky_hd = CAST(DATE_FORMAT(@hn, '%Y-%m-01') AS DATE);
+SET @cuoi_ky_hd = LAST_DAY(@hn);
+
+START TRANSACTION;
+
+INSERT INTO HOADON (MaSV, Thang, Nam, TrangThai) VALUES
+ ('B24DCCN001', MONTH(@hn), YEAR(@hn), 'DaThanhToan'),
+ ('B24DCCN002', MONTH(@hn), YEAR(@hn), 'DaThanhToan'),
+ ('B24DCCN003', MONTH(@hn), YEAR(@hn), 'ChuaThanhToan');
+
+DROP TEMPORARY TABLE IF EXISTS tmp_hoadon_mau;
+
+CREATE TEMPORARY TABLE tmp_hoadon_mau AS
+SELECT MaHD, MaSV, Thang, Nam
+FROM HOADON
+WHERE Thang = MONTH(@hn) AND Nam = YEAR(@hn);
+
+-- DonGiaApDung truyền 0 làm giá trị ban đầu; trigger trg_cthd_bi lấy lại giá
+-- và số lượng từ nguồn, tính ThanhTien; trigger trg_cthd_ai cộng vào TongTien.
+-- Tiền phòng: tính đủ một tháng cho mỗi đăng ký ở giao với kỳ hóa đơn.
+INSERT INTO CHITIET_HOADON (MaHD, LoaiPhi, DienGiai, SoLuong, DonGiaApDung, MaDKO)
+SELECT h.MaHD, 'Phong', CONCAT('Tiền phòng ', d.SoPhong, ' (tính chẵn tháng)'),
+       1, 0, d.MaDKO
+FROM tmp_hoadon_mau h
+JOIN DANGKY_O d ON d.MaSV = h.MaSV
+WHERE h.Thang = MONTH(@hn) AND h.Nam = YEAR(@hn)
+  AND d.NgayBatDau <= @cuoi_ky_hd
+  AND COALESCE(d.NgayKetThuc, '9999-12-31') >= @dau_ky_hd;
+
+-- Dịch vụ: mỗi lượt sử dụng trong tháng là một dòng chi tiết có MaSuDung.
+INSERT INTO CHITIET_HOADON (MaHD, LoaiPhi, DienGiai, SoLuong, DonGiaApDung, MaSuDung)
+SELECT h.MaHD, 'DichVu', CONCAT('Dịch vụ ', v.TenDV), 1, 0, u.MaSuDung
+FROM tmp_hoadon_mau h
+JOIN SUDUNG_DV u ON u.MaSV = h.MaSV
+JOIN DICHVU v ON v.MaDV = u.MaDV
+WHERE h.Thang = MONTH(@hn) AND h.Nam = YEAR(@hn)
+  AND u.ThoiDiemSuDung >= @dau_ky_hd
+  AND u.ThoiDiemSuDung < @cuoi_ky_hd + INTERVAL 1 DAY;
+
+-- Vé tháng: đúng một dòng/hóa đơn; trigger tự cộng giá của tất cả vé trong kỳ.
+INSERT INTO CHITIET_HOADON (MaHD, LoaiPhi, DienGiai, SoLuong, DonGiaApDung)
+SELECT h.MaHD, 'XeThang', 'Phí vé tháng xe (gộp tất cả xe)', 1, 0
+FROM tmp_hoadon_mau h
+WHERE h.Thang = MONTH(@hn) AND h.Nam = YEAR(@hn)
+  AND EXISTS (
+      SELECT 1 FROM DANGKY_XE_THANG d
+      WHERE d.MaSV = h.MaSV
+        AND d.NgayBatDau <= @cuoi_ky_hd
+        AND COALESCE(d.NgayKetThuc, '9999-12-31') >= @dau_ky_hd
+  );
+
+-- Phí xe phát sinh: chỉ lấy lượt có phí 3.000đ và thuộc tháng hóa đơn.
+INSERT INTO CHITIET_HOADON (MaHD, LoaiPhi, DienGiai, SoLuong, DonGiaApDung, MaLuot)
+SELECT h.MaHD, 'XePhatSinh', 'Phí gửi/lấy xe phát sinh', 1, 0, l.MaLuot
+FROM tmp_hoadon_mau h
+JOIN DANGKY_XE_THANG d ON d.MaSV = h.MaSV
+JOIN LUOT_RA_VAO_XE l ON l.MaDKXe = d.MaDKXe
+WHERE h.Thang = MONTH(@hn) AND h.Nam = YEAR(@hn)
+  AND l.PhiPhatSinh = 3000
+  AND l.ThoiDiem >= @dau_ky_hd
+  AND l.ThoiDiem < @cuoi_ky_hd + INTERVAL 1 DAY;
+
+COMMIT;
