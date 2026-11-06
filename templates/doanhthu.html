@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Doanh thu · KTX{% endblock %}
+
+{% block content %}
+{% from "_macros.html" import dau_trang, so_lieu %}
+{% call dau_trang("Doanh thu dịch vụ") %}
+    <form method="GET" action="{{ url_for('doanhthu') }}" data-auto>
+        <select class="form-select" name="nam" aria-label="Năm">
+            {% for n in ds_nam %}<option value="{{ n }}" {% if n == nam %}selected{% endif %}>Năm {{ n }}</option>{% endfor %}
+        </select>
+    </form>
+{% endcall %}
+
+<div class="so-lieu-hang">
+    {{ so_lieu("Tổng doanh thu năm " ~ nam, tong_nam|tien) }}
+</div>
+
+<div class="panel">
+    <div class="table-responsive">
+        <table class="table table-hover bang">
+            <thead>
+                <tr>
+                    <th>Dịch vụ</th>
+                    {% for t in range(1, 13) %}<th class="text-end {% if t == thang_ht %}text-primary{% endif %}">T{{ t }}</th>{% endfor %}
+                    <th class="text-end">Cả năm</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for h in hang %}
+                <tr>
+                    <td class="fw-semibold text-nowrap">{{ h.TenDV }}<span class="phu">{{ h.DonViTinh }}</span></td>
+                    {% for v in h.Thang %}<td class="text-end">{% if v %}{{ v|tien }}{% else %}<span class="text-muted">–</span>{% endif %}</td>{% endfor %}
+                    <td class="text-end fw-bold">{{ h.Tong|tien }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td class="fw-bold">Tổng</td>
+                    {% for v in tong_thang %}<td class="text-end fw-bold">{% if v %}{{ v|tien }}{% else %}<span class="text-muted">–</span>{% endif %}</td>{% endfor %}
+                    <td class="text-end fw-bold">{{ tong_nam|tien }}</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+<small class="text-muted d-block mt-3">Chỉ tính các dịch vụ trong danh mục. Tiền phòng và vé xe nằm ở trang Hóa đơn.</small>
+{% endblock %}

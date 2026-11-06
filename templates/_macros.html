@@ -1,0 +1,24 @@
+{# Tiêu đề trang. Dùng: {% call dau_trang("Tên") %} nút/ô tìm {% endcall %} #}
+{% macro dau_trang(ten) %}
+<div class="dau-trang">
+    <h1>{{ ten }}</h1>
+    {% if caller %}<div class="dau-trang-nut">{{ caller() }}</div>{% endif %}
+</div>
+{% endmacro %}
+
+{# Dòng thông báo khi bảng trống #}
+{% macro trong(so_cot, noi_dung) %}
+<tr><td colspan="{{ so_cot }}" class="trong">{{ noi_dung }}</td></tr>
+{% endmacro %}
+
+{# Một ô số liệu #}
+{% macro so_lieu(nhan, gia_tri) %}
+<div class="so-lieu"><div class="nhan">{{ nhan }}</div><div class="gia-tri">{{ gia_tri }}</div></div>
+{% endmacro %}
+
+{# Nút xóa có hộp xác nhận #}
+{% macro nut_xoa(url, hoi) %}
+<form method="POST" action="{{ url }}" data-confirm="{{ hoi }}">
+    <button type="submit" class="btn-icon btn-xoa" title="Xóa"><i class="bi bi-trash3"></i></button>
+</form>
+{% endmacro %}
