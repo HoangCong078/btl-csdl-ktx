@@ -53,10 +53,12 @@
                             </td>
                             <td class="text-end">
                                 {% if d.ConHan %}
-                                <button type="button" class="btn btn-sm btn-nhat nut-quet" data-ma="{{ d.BienSo }}"><i class="bi bi-upc-scan"></i> Quét</button>
-                                <form method="POST" action="{{ url_for('huy_xe', ma=d.MaDKXe) }}" data-confirm="Hủy vé xe {{ d.BienSo }}?" class="d-inline">
-                                    <button type="submit" class="btn-icon btn-xoa" title="Hủy vé"><i class="bi bi-x-circle"></i></button>
-                                </form>
+                                <div class="hanh-dong">
+                                    <button type="button" class="btn btn-sm btn-nhat nut-quet" data-ma="{{ d.BienSo }}"><i class="bi bi-upc-scan"></i> Quét</button>
+                                    <form method="POST" action="{{ url_for('huy_xe', ma=d.MaDKXe) }}" data-confirm="Hủy vé xe {{ d.BienSo }}?">
+                                        <button type="submit" class="btn-icon btn-xoa" title="Hủy vé"><i class="bi bi-x-circle"></i></button>
+                                    </form>
+                                </div>
                                 {% elif not d.DaCoVeMoi %}
                                 <button type="button" class="btn btn-sm btn-nhat nut-dklai" data-masv="{{ d.MaSV }}" data-loai="{{ d.LoaiXe }}" data-bien="{{ d.BienSo }}">
                                     <i class="bi bi-arrow-repeat"></i> Đăng ký lại
