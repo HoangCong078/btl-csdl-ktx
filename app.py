@@ -146,6 +146,27 @@ def dang_ky_dang_o(masv):
     return mot_dong("SELECT * FROM DANGKY_O WHERE MaSV = %s AND NgayKetThuc IS NULL", (masv,))
 
 
+def check_phong(masv, so_phong, ngay):
+    """Kiểm tra đăng ký ở; trả lỗi tiếng Việt hoặc None, không ghi dữ liệu.
+
+    ngay là chuỗi YYYY-MM-DD. Có thể gọi mà không cần request của Flask.
+    """
+    if not hop_le_ngay(ngay):
+        return "Ngày bắt đầu không hợp lệ."
+    sv = tim_sv(masv)
+    if sv is None:
+        return "Không tìm thấy sinh viên đã chọn."
+    p = tim_phong(so_phong)
+    if p is None:
+        return "Không tìm thấy phòng đã chọn."
+    dang_ky = dang_ky_dang_o(masv)
+    if dang_ky:
+        return f"{sv['HoTen']} đang ở phòng {dang_ky['SoPhong']}. Hãy trả phòng cũ trước."
+    if so_nguoi_dang_o(so_phong) >= p["SoNguoiToiDa"]:
+        return f"Phòng {so_phong} đã đủ {p['SoNguoiToiDa']}/{p['SoNguoiToiDa']} người."
+    return None
+
+
 # ===================== TRANG CHỦ =====================
 @app.route("/")
 def trang_chu():
@@ -235,21 +256,11 @@ def xoa_phong(so_phong):
 @app.route("/phong/xep", methods=["POST"])
 def xep_phong():
     masv, so_phong, ngay = request.form["MaSV"], request.form["SoPhong"], request.form["NgayBatDau"]
-    sv, p = tim_sv(masv), tim_phong(so_phong)
-    loi = None
-    if not hop_le_ngay(ngay):
-        loi = "Ngày bắt đầu không hợp lệ."
-    elif sv is None:
-        loi = "Không tìm thấy sinh viên đã chọn."
-    elif p is None:
-        loi = "Không tìm thấy phòng đã chọn."
-    elif dang_ky_dang_o(masv):
-        loi = f"{sv['HoTen']} đang ở phòng {dang_ky_dang_o(masv)['SoPhong']}. Hãy trả phòng cũ trước."
-    elif so_nguoi_dang_o(so_phong) >= p["SoNguoiToiDa"]:
-        loi = f"Phòng {so_phong} đã đủ {p['SoNguoiToiDa']}/{p['SoNguoiToiDa']} người."
+    loi = check_phong(masv, so_phong, ngay)
     if loi:
         flash(loi, "danger")
     else:   # trigger trg_dangky_o_bi kiểm tra lại một lần nữa ở phía CSDL
+        sv, p = tim_sv(masv), tim_phong(so_phong)
         thuc_hien("INSERT INTO DANGKY_O (MaSV, SoPhong, NgayBatDau, NgayKetThuc, DonGiaThangApDung) "
                   "VALUES (%s, %s, %s, NULL, %s)", (masv, so_phong, ngay, p["DonGia"]),
                   f"Đã xếp {sv['HoTen']} vào phòng {so_phong}.")
@@ -426,6 +437,30 @@ def tao_ma_xe_dap(masv):
     return ma + "-2" if ve_con_han_cua_bien(ma) else ma
 
 
+def check_xe(masv, bien_so, loai, ngay):
+    """Kiểm tra đăng ký vé xe; trả lỗi tiếng Việt hoặc None, không ghi dữ liệu.
+
+    bien_so đã được chuẩn hóa hoặc tạo mã xe đạp; ngay có dạng YYYY-MM-DD.
+    Có thể gọi mà không cần request của Flask.
+    """
+    if not hop_le_ngay(ngay):
+        return "Ngày bắt đầu không hợp lệ."
+    if ngay > hom_nay():
+        return "Ngày bắt đầu không được ở tương lai."
+    if tim_sv(masv) is None:
+        return "Không tìm thấy sinh viên đã chọn."
+    if not bien_so:
+        return "Vui lòng nhập biển số xe."
+    if loai not in DS_LOAI_XE:
+        return "Loại xe không hợp lệ."
+    if dem_xe_hieu_luc(masv) >= TOI_DA_XE:
+        return f"Sinh viên {masv} đã đủ {TOI_DA_XE}/{TOI_DA_XE} xe vé tháng."
+    ve = ve_con_han_cua_bien(bien_so)
+    if ve:
+        return f"Xe {bien_so} đang có vé còn hạn của {ve['MaSV']}."
+    return None
+
+
 def luot_trong_ngay(ma_dkxe, ngay):
     return mot_dong("SELECT COUNT(*) AS n FROM LUOT_RA_VAO_XE WHERE MaDKXe = %s AND DATE(ThoiDiem) = %s",
                     (ma_dkxe, ngay))["n"]
@@ -522,21 +557,7 @@ def xe_thang():
     bien_so = form.get("BienSo", "").strip().upper()
     if loai == "Xe đạp":
         bien_so = tao_ma_xe_dap(masv)
-    loi = None
-    if not hop_le_ngay(ngay):
-        loi = "Ngày bắt đầu không hợp lệ."
-    elif ngay > hom_nay():
-        loi = "Ngày bắt đầu không được ở tương lai."
-    elif tim_sv(masv) is None:
-        loi = "Không tìm thấy sinh viên đã chọn."
-    elif not bien_so:
-        loi = "Vui lòng nhập biển số xe."
-    elif loai not in DS_LOAI_XE:
-        loi = "Loại xe không hợp lệ."
-    elif dem_xe_hieu_luc(masv) >= TOI_DA_XE:
-        loi = f"Sinh viên {masv} đã đủ {TOI_DA_XE}/{TOI_DA_XE} xe vé tháng."
-    elif ve_con_han_cua_bien(bien_so):
-        loi = f"Xe {bien_so} đang có vé còn hạn của {ve_con_han_cua_bien(bien_so)['MaSV']}."
+    loi = check_xe(masv, bien_so, loai, ngay)
     if loi:
         flash(loi, "danger")
         return redirect(url_for("xe"))
