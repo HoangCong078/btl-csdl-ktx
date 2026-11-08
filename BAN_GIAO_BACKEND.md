@@ -1,8 +1,3 @@
-# Bàn giao SQL và backend của Người 2
-
-Ngày kiểm tra: 08/11/2026. Nhánh bàn giao: `feature/backend`.
-
-## Thành phần bàn giao
 
 | Thành phần | Nội dung |
 |---|---|
@@ -64,5 +59,3 @@ Kiểm tra HTTP dùng dữ liệu/render của Flask; chưa phải kiểm thử 
 - SQL truy vấn 3 hỗ trợ tuần/tháng; giao diện có thêm chế độ Tất cả.
 - File `KTX.sql` là bản gộp. Sau khi thay đổi file thành phần, tạo lại theo lệnh trong README rồi kiểm tra trước khi nộp.
 - Nhóm review nhánh `feature/backend` trước khi gộp vào `main`; kiểm tra xung đột với nhánh frontend và DDL của Người 1. Không merge tự động trong bước bàn giao.
-
-So sánh nhánh để review: https://github.com/HoangCong078/btl-csdl-ktx/compare/main...feature/backend
