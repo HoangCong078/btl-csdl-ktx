@@ -165,7 +165,7 @@ body {
 }
 .bang td { padding: .85rem 1.25rem; border-color: var(--line-soft); vertical-align: middle; }
 .bang tbody tr:last-child td { border-bottom: 0; }
-.bang .phu { display: block; color: var(--muted); font-size: .8rem; }
+.bang .phu { display: block; margin-top: .15rem; color: var(--muted); font-size: .8rem; }
 .bang .trong { padding: 2.5rem 1rem; text-align: center; color: var(--muted); }
 
 .avatar {
@@ -252,38 +252,23 @@ body {
 
 .o-quet { padding: .8rem 1rem; font-size: 1.15rem; }
 
-/* ---------- Rà soát khoảng cách ---------- */
-/* Nhãn đứng cạnh nhau và nhãn đứng cạnh chữ */
-.tag + .tag { margin-left: .35rem; }
+/* ============ Điều chỉnh bổ sung ============ */
+/* Ô chọn: chừa chỗ cho mũi tên (đặt sau rule .form-control, .form-select ở trên) */
+.form-select { padding-right: 2.5rem; background-position: right .85rem center; }
 
-/* Dòng phụ dưới tên không dính vào dòng trên */
-.bang .phu { margin-top: .15rem; }
+/* Nhãn đứng cạnh nhau */
+.tag + .tag { margin-left: .35rem; }
 
 /* Nhóm nút trong ô thao tác của bảng */
 .hanh-dong { display: inline-flex; align-items: center; justify-content: flex-end; gap: .4rem; }
 .hanh-dong form { margin: 0; }
 
-/* Các khối nối tiếp nhau luôn cách nhau */
-.panel + .panel,
-.so-lieu-hang + .panel { margin-top: 1.5rem; }
-
-/* Ô lọc ở đầu trang co giãn đều, không tràn ngang */
-.dau-trang-nut .form-select,
-.dau-trang-nut .form-control { min-width: 0; }
-
 @media (max-width: 575.98px) {
     .dau-trang-nut form { width: 100%; }
     .dau-trang-nut form .form-select,
-    .dau-trang-nut form .form-control { flex: 1 1 8rem; width: auto !important; }
+    .dau-trang-nut form .form-control { flex: 1 1 8rem; min-width: 0; }
 
     /* Bảng trên điện thoại: bớt lề để chữ không bị ép */
     .bang th, .bang td { padding: .7rem .75rem; }
     .panel-head, .panel-body { padding: 1rem; }
-}
-
-/* Chừa chỗ cho mũi tên ô chọn: đặt ở cuối file để không bị đè */
-.form-select,
-.form-select.w-auto {
-    padding-right: 2.5rem !important;
-    background-position: right .85rem center;
 }
