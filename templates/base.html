@@ -3,8 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}Quản lý KTX{% endblock %}</title>
-
+    <title>{% block title %}KTX{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
@@ -12,65 +11,145 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <aside class="sidebar">
-        <div class="brand">
-            <i class="bi bi-building"></i>
-            <span>Quản lý KTX</span>
-        </div>
+    {# Menu dùng chung cho thanh bên (máy tính) và ngăn kéo (điện thoại) #}
+    {% macro menu() %}
+    {% set ep = request.endpoint %}
+    {% for dich, nhom, icon, nhan in [
+        ('sinhvien', ['sinhvien', 'xoa_sinhvien'], 'people', 'Sinh viên'),
+        ('phong', ['phong', 'xoa_phong', 'xep_phong', 'tra_phong'], 'door-open', 'Phòng'),
+        ('khach', ['khach'], 'person-badge', 'Khách thăm'),
+        ('dichvu', ['dichvu', 'xoa_luot_dung'], 'basket', 'Dịch vụ'),
+        ('xe', ['xe', 'quet_xe', 'xe_thang', 'xoa_luot_xe'], 'bicycle', 'Xe'),
+        ('hoadon', ['hoadon', 'hoadon_chitiet', 'hoadon_thu'], 'receipt', 'Hóa đơn'),
+        ('doanhthu', ['doanhthu'], 'graph-up-arrow', 'Doanh thu')] %}
+    <a class="nav-link {{ 'active' if ep in nhom }}" href="{{ url_for(dich) }}">
+        <i class="bi bi-{{ icon }}"></i>{{ nhan }}
+    </a>
+    {% endfor %}
+    {% endmacro %}
 
-        <nav class="nav flex-column">
-            <div class="nhom">Quản lý</div>
-            <a class="nav-link {% if request.endpoint in ('sinhvien', 'xoa_sinhvien') %}active{% endif %}"
-               href="{{ url_for('sinhvien') }}">
-                <i class="bi bi-people"></i> Sinh viên
-            </a>
-            <a class="nav-link {% if request.endpoint in ('phong', 'xoa_phong') %}active{% endif %}"
-                href="{{ url_for('phong') }}">
-                <i class="bi bi-door-open"></i> Phòng ở
-            </a>
-            <a class="nav-link {% if request.endpoint in ('dangky_o', 'tra_phong') %}active{% endif %}"
-                href="{{ url_for('dangky_o') }}">
-                <i class="bi bi-key"></i> Đăng ký ở
-            </a>
-            <a class="nav-link {% if request.endpoint == 'khach' %}active{% endif %}"
-                href="{{ url_for('khach') }}">
-                <i class="bi bi-person-badge"></i> Khách thăm
-            </a>
-
-            <div class="nhom">Dịch vụ</div>
-            <a class="nav-link {% if request.endpoint in ('dichvu', 'xoa_luot_dung') %}active{% endif %}"
-                href="{{ url_for('dichvu') }}">
-                <i class="bi bi-basket"></i> Dịch vụ
-            </a>
-            <a class="nav-link {% if request.endpoint in ('xe_thang', 'huy_xe') %}active{% endif %}"
-                href="{{ url_for('xe_thang') }}">
-                <i class="bi bi-bicycle"></i> Gửi xe tháng
-            </a>
-
-            <div class="nhom">Tài chính</div>
-            <a class="nav-link disabled" href="#">
-                <i class="bi bi-receipt"></i> Hóa đơn <span class="badge-sapco">Sắp có</span>
-            </a>
-            <a class="nav-link disabled" href="#">
-                <i class="bi bi-graph-up"></i> Doanh thu <span class="badge-sapco">Sắp có</span>
-            </a>
-        </nav>
+    <!-- Máy tính: thanh bên -->
+    <aside class="side d-none d-lg-flex">
+        <div class="thuong-hieu"><i class="bi bi-buildings-fill"></i> KTX</div>
+        <nav class="menu nav flex-column">{{ menu() }}</nav>
     </aside>
 
-    <main class="noidung">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% for loai, noidung in messages %}
-                <div class="alert alert-{{ loai }} alert-dismissible fade show" role="alert">
-                    {{ noidung }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            {% endfor %}
-        {% endwith %}
+    <!-- Điện thoại: thanh trên và ngăn kéo -->
+    <header class="topbar d-lg-none">
+        <button type="button" class="btn-icon" data-bs-toggle="offcanvas" data-bs-target="#menuDi" aria-label="Mở menu">
+            <i class="bi bi-list fs-4"></i>
+        </button>
+        <div class="thuong-hieu p-0">KTX</div>
+    </header>
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="menuDi">
+        <div class="offcanvas-header">
+            <div class="thuong-hieu"><i class="bi bi-buildings-fill"></i> KTX</div>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <nav class="offcanvas-body menu nav flex-column pt-0">{{ menu() }}</nav>
+    </div>
 
-        {% block content %}{% endblock %}
+    <main class="main">
+        <div class="noi-dung">{% block content %}{% endblock %}</div>
     </main>
 
+    <!-- Thông báo -->
+    <div class="thong-bao">
+        {% for loai, noi in get_flashed_messages(with_categories=true) %}
+        <div class="alert alert-{{ loai }} alert-dismissible fade show" role="alert">
+            {{ noi }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Hộp xác nhận dùng chung: thêm data-confirm="..." vào <form> -->
+    <div class="modal fade" id="modalXacNhan" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content p-2">
+                <div class="modal-body text-center">
+                    <i class="bi bi-exclamation-circle text-warning" style="font-size:2.4rem"></i>
+                    <p class="my-3 fw-semibold" id="modalNoiDung"></p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                        <button type="button" class="btn btn-chinh" id="modalDongY">Đồng ý</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Hộp xác nhận cho mọi form có data-confirm
+        (function () {
+            const modal = new bootstrap.Modal(document.getElementById("modalXacNhan"));
+            let formCho = null;
+            document.addEventListener("submit", function (e) {
+                if (e.target.dataset.confirm) {
+                    e.preventDefault();
+                    formCho = e.target;
+                    document.getElementById("modalNoiDung").textContent = e.target.dataset.confirm;
+                    modal.show();
+                }
+            });
+            document.getElementById("modalDongY").addEventListener("click", function () {
+                if (formCho) { formCho.submit(); }
+            });
+        })();
+
+        // Thanh tiến độ: độ dài lấy từ data-width
+        document.querySelectorAll("[data-width]").forEach(function (el) {
+            el.style.width = Math.min(el.dataset.width, 100) + "%";
+        });
+
+        // Thông báo tự tắt sau 5 giây
+        setTimeout(function () {
+            document.querySelectorAll(".thong-bao .alert").forEach(function (a) {
+                bootstrap.Alert.getOrCreateInstance(a).close();
+            });
+        }, 5000);
+
+        // Bộ lọc tự áp dụng khi đổi lựa chọn: <form data-auto>
+        document.querySelectorAll("form[data-auto] select, form[data-auto] input[type=date]").forEach(function (o) {
+            o.addEventListener("change", function () { o.form.submit(); });
+        });
+
+        // Ô tìm nhanh trong bảng: <input data-tim="idBang">
+        document.querySelectorAll("[data-tim]").forEach(function (o) {
+            o.addEventListener("input", function () {
+                const tuKhoa = o.value.toLowerCase();
+                document.querySelectorAll("#" + o.dataset.tim + " tbody tr").forEach(function (dong) {
+                    dong.style.display = dong.textContent.toLowerCase().includes(tuKhoa) ? "" : "none";
+                });
+            });
+        });
+
+        // Chọn phòng/lớp thì ô sinh viên chỉ còn những người phù hợp
+        (function () {
+            const locPhong = document.getElementById("locPhongForm");
+            const locLop = document.getElementById("locLopForm");
+            const oSV = document.getElementById("masv");
+            if (!locPhong || !locLop || !oSV) { return; }
+            function loc() {
+                let dangChon = false, dauTien = null;
+                Array.from(oSV.options).forEach(function (o) {
+                    const khop = (!locPhong.value || o.dataset.phong === locPhong.value) &&
+                                 (!locLop.value || o.dataset.lop === locLop.value);
+                    o.hidden = !khop;
+                    if (khop && !o.disabled && !dauTien) { dauTien = o; }
+                    if (khop && !o.disabled && o.selected) { dangChon = true; }
+                });
+                if (!dangChon && dauTien) { dauTien.selected = true; }
+            }
+            locPhong.addEventListener("change", loc);
+            locLop.addEventListener("change", loc);
+        })();
+
+        // Hộp nhập bị lỗi (trùng mã...) thì mở lại để không phải nhập lại: <div class="modal" data-mo="1">
+        document.querySelectorAll(".modal[data-mo='1']").forEach(function (m) {
+            bootstrap.Modal.getOrCreateInstance(m).show();
+        });
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

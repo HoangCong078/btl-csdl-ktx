@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% block title %}Xe · KTX{% endblock %}
+
+{% block content %}
+{% from "_macros.html" import dau_trang, trong, nut_xoa %}
+{% call dau_trang("Xe") %}
+    <input type="search" class="form-control o-tim" data-tim="bangVe" placeholder="Tìm xe, chủ xe...">
+    <button type="button" class="btn btn-chinh" data-bs-toggle="modal" data-bs-target="#modalVe">
+        <i class="bi bi-plus-lg"></i> Đăng ký vé
+    </button>
+{% endcall %}
+
+<!-- Ô quét -->
+<div class="panel panel-body mb-4">
+    <form method="POST" action="{{ url_for('quet_xe') }}" class="row g-2" id="formQuet">
+        <div class="col-sm-10">
+            <input type="text" class="form-control o-quet" id="maquet" name="MaQuet"
+                   placeholder="Quét biển số hoặc thẻ sinh viên, rồi Enter" autocomplete="off" autofocus required>
+        </div>
+        <div class="col-sm-2">
+            <button type="submit" class="btn btn-chinh w-100 h-100"><i class="bi bi-upc-scan"></i> Quét</button>
+        </div>
+    </form>
+    <small class="text-muted d-block mt-2">Miễn phí {{ mien_phi }} lượt/xe/ngày, từ lượt tiếp theo {{ phi|tien }}/lượt. Vé {{ gia|tien }}/tháng., hạn 30 ngày.</small>
+</div>
+
+<div class="panel">
+    <div class="nav tab-ktx" role="tablist">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabVe" type="button">Vé tháng</button>
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabQuet" type="button">Vừa quét</button>
+    </div>
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="tabVe">
+            <div class="table-responsive">
+                <table class="table table-hover bang" id="bangVe">
+                    <thead><tr><th>Xe</th><th>Chủ xe</th><th>Hạn</th><th class="d-none d-md-table-cell">Hôm nay</th><th></th></tr></thead>
+                    <tbody>
+                        {% for d in ds_ve %}
+                        <tr>
+                            <td><div class="fw-semibold">{{ d.BienSo }}</div><span class="phu">{{ d.LoaiXe }}</span></td>
+                            <td>{{ d.HoTen }}<span class="phu">{{ d.MaSV }}</span></td>
+                            <td>
+                                {% if d.ConHan %}<span class="tag tag-ok">Đang hiệu lực</span>
+                                <span class="phu">Từ {{ d.NgayBatDau|ngay }}</span>
+                                {% else %}<span class="tag tag-mute">Đã hủy</span>
+                                <span class="phu">{{ d.NgayBatDau|ngay }} – {{ d.NgayKetThuc|ngay }}</span>{% endif %}
+                            </td>
+                            <td class="d-none d-md-table-cell">
+                                {% if d.ConHan %}
+                                {{ d.SoLuot }} lượt · <span class="tag tag-info">{{ d.TiepTheo }}</span>
+                                {% if d.PhiTiep %}<span class="tag tag-warn">{{ d.PhiTiep|tien }}</span>{% else %}<span class="tag tag-ok">Miễn phí</span>{% endif %}
+                                {% else %}<span class="text-muted">—</span>{% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if d.ConHan %}
+                                <div class="hanh-dong">
+                                    <button type="button" class="btn btn-sm btn-nhat nut-quet" data-ma="{{ d.BienSo }}"><i class="bi bi-upc-scan"></i> Quét</button>
+                                    <form method="POST" action="{{ url_for('huy_xe', ma=d.MaDKXe) }}" data-confirm="Hủy vé xe {{ d.BienSo }}?">
+                                        <button type="submit" class="btn-icon btn-xoa" title="Hủy vé"><i class="bi bi-x-circle"></i></button>
+                                    </form>
+                                </div>
+                                {% elif not d.DaCoVeMoi %}
+                                <button type="button" class="btn btn-sm btn-nhat nut-dklai" data-masv="{{ d.MaSV }}" data-loai="{{ d.LoaiXe }}" data-bien="{{ d.BienSo }}">
+                                    <i class="bi bi-arrow-repeat"></i> Đăng ký lại
+                                </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        {{ trong(5, "Chưa có vé.") }}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="tabQuet">
+            <div class="table-responsive">
+                <table class="table table-hover bang">
+                    <tbody>
+                        {% for l in ds_gan_day %}
+                        <tr>
+                            <td>{{ l.ThoiDiem|gio_giay }}</td>
+                            <td class="fw-semibold">{{ l.BienSo }}<span class="phu">{{ l.HoTen }}</span></td>
+                            <td>{% if l.LoaiHanhDong == 'Gui' %}<span class="tag tag-ok">Gửi</span>{% else %}<span class="tag tag-mute">Lấy</span>{% endif %}</td>
+                            <td>{% if l.PhiPhatSinh %}<strong>{{ l.PhiPhatSinh|tien }}</strong>{% else %}0đ{% endif %}</td>
+                            <td class="text-end">{{ nut_xoa(url_for('xoa_luot_xe', ma=l.MaLuot), 'Xóa lượt quét này?') }}</td>
+                        </tr>
+                        {% else %}
+                        {{ trong(5, "Chưa có lượt quét.") }}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hộp đăng ký vé -->
+<div class="modal fade" id="modalVe" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-fullscreen-sm-down">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('xe_thang') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Đăng ký vé tháng</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body row g-3">
+                    <div class="col-md-3">
+                        <label for="locPhongForm" class="form-label">Phòng</label>
+                        <select class="form-select" id="locPhongForm">
+                            <option value="">Tất cả</option>
+                            {% for p in ds_phong %}<option value="{{ p }}">{{ p }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="locLopForm" class="form-label">Lớp</label>
+                        <select class="form-select" id="locLopForm">
+                            <option value="">Tất cả</option>
+                            {% for l in ds_lop %}<option value="{{ l }}">{{ l }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="masv" class="form-label">Sinh viên *</label>
+                        <select class="form-select" id="masv" name="MaSV" required>
+                            {% for sv in ds_sv %}
+                            <option value="{{ sv.MaSV }}" data-phong="{{ sv.Phong }}" data-lop="{{ sv.Lop }}" {% if sv.SoXe >= toi_da %}disabled{% endif %}>
+                                {{ sv.HoTen }} ({{ sv.SoXe }}/{{ toi_da }} xe)
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="loaixe" class="form-label">Loại xe *</label>
+                        <select class="form-select" id="loaixe" name="LoaiXe">
+                            {% for l in ds_loai %}<option value="{{ l }}">{{ l }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="bienso" class="form-label">Biển số *</label>
+                        <input type="text" class="form-control" id="bienso" name="BienSo" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="ngaybd" class="form-label">Ngày bắt đầu *</label>
+                        <input type="date" class="form-control" id="ngaybd" name="NgayBatDau" value="{{ hom_nay }}" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-chinh">Đăng ký</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const oQuet = document.getElementById("maquet");
+    const oLoai = document.getElementById("loaixe");
+    const oBien = document.getElementById("bienso");
+
+    // Nút "Quét" ở bảng vé: điền mã và gửi luôn, như camera vừa đọc xong
+    document.querySelectorAll(".nut-quet").forEach(function (nut) {
+        nut.addEventListener("click", function () {
+            oQuet.value = nut.dataset.ma;
+            document.getElementById("formQuet").submit();
+        });
+    });
+    oQuet.focus();
+
+    // Xe đạp: không nhập biển số, hệ thống tự dùng mã sinh viên
+    function capNhatBienSo() {
+        const laXeDap = oLoai.value === "Xe đạp";
+        oBien.disabled = laXeDap;
+        oBien.required = !laXeDap;
+        oBien.placeholder = laXeDap ? "Tự lấy theo mã sinh viên" : "29A1-12345";
+        if (laXeDap) { oBien.value = ""; }
+    }
+    oLoai.addEventListener("change", capNhatBienSo);
+    capNhatBienSo();
+
+    // Vé hết hạn: "Đăng ký lại" mở hộp với thông tin điền sẵn
+    document.querySelectorAll(".nut-dklai").forEach(function (nut) {
+        nut.addEventListener("click", function () {
+            document.getElementById("masv").value = nut.dataset.masv;
+            oLoai.value = nut.dataset.loai;
+            capNhatBienSo();
+            if (nut.dataset.loai !== "Xe đạp") { oBien.value = nut.dataset.bien; }
+            bootstrap.Modal.getOrCreateInstance(document.getElementById("modalVe")).show();
+        });
+    });
+</script>
+{% endblock %}

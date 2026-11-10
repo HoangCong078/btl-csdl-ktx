@@ -1,200 +1,149 @@
 {% extends "base.html" %}
-{% block title %}Dịch vụ · Quản lý KTX{% endblock %}
+{% block title %}Dịch vụ · KTX{% endblock %}
 
 {% block content %}
-<div class="tieu-de-trang mb-4">
-    <h1>Dịch vụ</h1>
-    <p>Ghi nhận dịch vụ sinh viên sử dụng và xem tiền theo phòng, lớp, khoảng ngày.</p>
-</div>
+{% from "_macros.html" import dau_trang, trong, nut_xoa %}
+{% call dau_trang("Dịch vụ") %}
+    <button type="button" class="btn btn-chinh" data-bs-toggle="modal" data-bs-target="#modalThem">
+        <i class="bi bi-plus-lg"></i> Ghi nhận
+    </button>
+{% endcall %}
 
-<!-- Ghi nhận -->
-<div class="card-ktx mb-4">
-    <div class="card-head"><i class="bi bi-plus-circle-fill"></i> Ghi nhận lượt sử dụng</div>
-    <div class="card-body-ktx">
-        <form method="POST" action="{{ url_for('dichvu') }}" class="row g-3">
-            <div class="col-md-3">
-                <label for="locPhongForm" class="form-label">Chọn theo phòng</label>
-                <select class="form-select" id="locPhongForm">
-                    <option value="">Tất cả phòng</option>
-                    {% for p in ds_phong %}<option value="{{ p }}">{{ p }}</option>{% endfor %}
-                </select>
+<div class="panel">
+    <div class="nav tab-ktx" role="tablist">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabTong" type="button">Tiền theo sinh viên</button>
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabGanDay" type="button">Vừa ghi nhận</button>
+    </div>
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="tabTong">
+            <form method="GET" action="{{ url_for('dichvu') }}" class="panel-body row g-2 border-bottom" data-auto>
+                <div class="col-6 col-md-3">
+                    <label for="tu" class="form-label">Từ ngày</label>
+                    <input type="date" class="form-control" id="tu" name="tu" value="{{ tu }}">
+                </div>
+                <div class="col-6 col-md-3">
+                    <label for="den" class="form-label">Đến ngày</label>
+                    <input type="date" class="form-control" id="den" name="den" value="{{ den }}">
+                </div>
+                <div class="col-6 col-md-3">
+                    <label for="phong" class="form-label">Phòng</label>
+                    <select class="form-select" id="phong" name="phong">
+                        <option value="">Tất cả</option>
+                        {% for p in ds_phong %}<option value="{{ p }}" {% if loc_phong == p %}selected{% endif %}>{{ p }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-6 col-md-3">
+                    <label for="lop" class="form-label">Lớp</label>
+                    <select class="form-select" id="lop" name="lop">
+                        <option value="">Tất cả</option>
+                        {% for l in ds_lop %}<option value="{{ l }}" {% if loc_lop == l %}selected{% endif %}>{{ l }}</option>{% endfor %}
+                    </select>
+                </div>
+            </form>
+            <div class="table-responsive">
+                <table class="table table-hover bang">
+                    <thead><tr><th>Sinh viên</th><th class="d-none d-md-table-cell">Phòng</th><th>Dịch vụ</th><th class="text-end">Tổng tiền</th></tr></thead>
+                    <tbody>
+                        {% for t in ds_thongke %}
+                        <tr>
+                            <td><div class="fw-semibold">{{ t.HoTenSV }}</div><span class="phu">{{ t.MaSV }} · {{ t.Lop }}</span></td>
+                            <td class="d-none d-md-table-cell">{{ t.Phong }}</td>
+                            <td>{{ t.TenDV }}<span class="phu">{{ t.SoLuong }} {{ t.DonViTinh }}</span></td>
+                            <td class="text-end fw-semibold">{{ t.TongTien|tien }}</td>
+                        </tr>
+                        {% else %}
+                        {{ trong(4, "Không có dữ liệu với bộ lọc này.") }}
+                        {% endfor %}
+                    </tbody>
+                    {% if ds_thongke %}
+                    <tfoot>
+                        <tr><td colspan="3" class="fw-semibold">Tổng</td><td class="text-end fw-bold">{{ tong_tien|tien }}</td></tr>
+                    </tfoot>
+                    {% endif %}
+                </table>
             </div>
-            <div class="col-md-3">
-                <label for="locLopForm" class="form-label">Chọn theo lớp</label>
-                <select class="form-select" id="locLopForm">
-                    <option value="">Tất cả lớp</option>
-                    {% for l in ds_lop %}<option value="{{ l }}">{{ l }}</option>{% endfor %}
-                </select>
-            </div>
-            <div class="col-md-6">
-                <label for="masv" class="form-label">Sinh viên *</label>
-                <select class="form-select" id="masv" name="MaSV" required>
-                    {% for sv in ds_sv %}
-                    <option value="{{ sv.MaSV }}" data-phong="{{ sv.Phong }}" data-lop="{{ sv.Lop }}"
-                            {% if form.get('MaSV') == sv.MaSV %}selected{% endif %}>
-                        {{ sv.HoTen }} · {{ sv.Phong or 'chưa có phòng' }} · {{ sv.Lop }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
+        </div>
 
-            <div class="col-md-4">
-                <label for="madv" class="form-label">Dịch vụ *</label>
-                <select class="form-select" id="madv" name="MaDV" required>
-                    {% for d in ds_dichvu %}
-                    <option value="{{ d.MaDV }}" {% if form.get('MaDV') == d.MaDV %}selected{% endif %}>
-                        {{ d.TenDV }} ({{ d.DonGia|tien }}/{{ d.DonViTinh }})
-                    </option>
-                    {% endfor %}
-                </select>
+        <div class="tab-pane fade" id="tabGanDay">
+            <div class="table-responsive">
+                <table class="table table-hover bang">
+                    <tbody>
+                        {% for s in ds_gan_day %}
+                        <tr>
+                            <td>{{ s.ThoiDiemSuDung|gio }}</td>
+                            <td>{{ s.HoTenSV }}</td>
+                            <td>{{ s.TenDV }} × {{ s.SoLuong }}</td>
+                            <td class="fw-semibold">{{ s.ThanhTien|tien }}</td>
+                            <td class="text-end">{{ nut_xoa(url_for('xoa_luot_dung', ma=s.MaSuDung), 'Xóa lượt này?') }}</td>
+                        </tr>
+                        {% else %}
+                        {{ trong(5, "Chưa có lượt nào.") }}
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-            <div class="col-md-2">
-                <label for="soluong" class="form-label">Số lượng *</label>
-                <input type="number" class="form-control" id="soluong" name="SoLuong"
-                       min="1" value="{{ form.get('SoLuong', 1) }}" required>
-            </div>
-            <div class="col-md-3">
-                <label for="thoidiem" class="form-label">Thời điểm *</label>
-                <input type="datetime-local" class="form-control" id="thoidiem" name="ThoiDiemSuDung"
-                       value="{{ form.get('ThoiDiemSuDung', bay_gio) }}" required>
-            </div>
-            <div class="col-md-3 d-flex align-items-end">
-                <button type="submit" class="btn btn-chinh w-100">
-                    <i class="bi bi-check2-circle"></i> Ghi nhận
-                </button>
-            </div>
-        </form>
-        <small class="text-muted d-block mt-3">
-            Chọn phòng hoặc lớp trước để thu hẹp danh sách sinh viên. Thành tiền được tính tự động.
-        </small>
+        </div>
     </div>
 </div>
 
-<!-- Thống kê -->
-<div class="card-ktx">
-    <div class="card-head justify-content-between flex-wrap gap-2">
-        <span><i class="bi bi-bar-chart-fill"></i> Tiền dịch vụ theo sinh viên</span>
-        <span class="text-muted fw-normal">Tổng: <strong class="text-dark">{{ tong_tien|tien }}</strong></span>
-    </div>
-    <div class="card-body-ktx border-bottom">
-        <form method="GET" action="{{ url_for('dichvu') }}" class="row g-3 align-items-end">
-            <div class="col-md-2">
-                <label for="tu" class="form-label">Từ ngày</label>
-                <input type="date" class="form-control" id="tu" name="tu" value="{{ tu }}">
-            </div>
-            <div class="col-md-2">
-                <label for="den" class="form-label">Đến ngày</label>
-                <input type="date" class="form-control" id="den" name="den" value="{{ den }}">
-            </div>
-            <div class="col-md-3">
-                <label for="phong" class="form-label">Phòng</label>
-                <select class="form-select" id="phong" name="phong">
-                    <option value="">Tất cả phòng</option>
-                    {% for p in ds_phong %}
-                    <option value="{{ p }}" {% if loc_phong == p %}selected{% endif %}>{{ p }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label for="lop" class="form-label">Lớp</label>
-                <select class="form-select" id="lop" name="lop">
-                    <option value="">Tất cả lớp</option>
-                    {% for l in ds_lop %}
-                    <option value="{{ l }}" {% if loc_lop == l %}selected{% endif %}>{{ l }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-chinh w-100">Xem</button>
-            </div>
-        </form>
-    </div>
-    <div class="table-responsive">
-        <table class="table bang-ktx">
-            <thead>
-                <tr>
-                    <th>Sinh viên</th>
-                    <th>Phòng</th>
-                    <th>Lớp</th>
-                    <th>Dịch vụ</th>
-                    <th>Số lượng</th>
-                    <th>Tổng tiền</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for t in ds_thongke %}
-                <tr>
-                    <td>
-                        <span class="fw-semibold">{{ t.HoTenSV }}</span><br>
-                        <small class="text-muted">{{ t.MaSV }}</small>
-                    </td>
-                    <td>{{ t.Phong }}</td>
-                    <td><span class="tag-lop">{{ t.Lop }}</span></td>
-                    <td>{{ t.TenDV }}</td>
-                    <td>{{ t.SoLuong }} {{ t.DonViTinh }}</td>
-                    <td class="fw-semibold">{{ t.TongTien|tien }}</td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="6" class="text-center text-muted py-4">Không có dữ liệu với bộ lọc này.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+<!-- Hộp ghi nhận -->
+<div class="modal fade" id="modalThem" tabindex="-1" aria-hidden="true" data-mo="{{ '1' if form else '' }}">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-fullscreen-sm-down">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('dichvu') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Ghi nhận dịch vụ</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body row g-3">
+                    <div class="col-md-3">
+                        <label for="locPhongForm" class="form-label">Phòng</label>
+                        <select class="form-select" id="locPhongForm">
+                            <option value="">Tất cả</option>
+                            {% for p in ds_phong %}<option value="{{ p }}">{{ p }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="locLopForm" class="form-label">Lớp</label>
+                        <select class="form-select" id="locLopForm">
+                            <option value="">Tất cả</option>
+                            {% for l in ds_lop %}<option value="{{ l }}">{{ l }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="masv" class="form-label">Sinh viên *</label>
+                        <select class="form-select" id="masv" name="MaSV" required>
+                            {% for sv in ds_sv %}
+                            <option value="{{ sv.MaSV }}" data-phong="{{ sv.Phong }}" data-lop="{{ sv.Lop }}" {% if form.get('MaSV') == sv.MaSV %}selected{% endif %}>
+                                {{ sv.HoTen }} · {{ sv.Phong or 'chưa có phòng' }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="madv" class="form-label">Dịch vụ *</label>
+                        <select class="form-select" id="madv" name="MaDV" required>
+                            {% for d in ds_dichvu %}
+                            <option value="{{ d.MaDV }}" {% if form.get('MaDV') == d.MaDV %}selected{% endif %}>{{ d.TenDV }} ({{ d.DonGia|tien }}/{{ d.DonViTinh }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2 col-4">
+                        <label for="soluong" class="form-label">Số lượng *</label>
+                        <input type="number" class="form-control" id="soluong" name="SoLuong" min="1" value="{{ form.get('SoLuong', 1) }}" required>
+                    </div>
+                    <div class="col-md-4 col-8">
+                        <label for="thoidiem" class="form-label">Thời điểm *</label>
+                        <input type="datetime-local" class="form-control" id="thoidiem" name="ThoiDiemSuDung" value="{{ form.get('ThoiDiemSuDung', bay_gio) }}" required>
+                    </div>
+                    <div class="col-12"><small class="text-muted">Thành tiền được tính tự động theo đơn giá hiện tại.</small></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-chinh">Ghi nhận</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
-
-<!-- Lượt gần đây -->
-<div class="card-ktx mt-4">
-    <div class="card-head"><i class="bi bi-clock-history"></i> Vừa ghi nhận</div>
-    <div class="table-responsive">
-        <table class="table bang-ktx">
-            <tbody>
-                {% for s in ds_gan_day %}
-                <tr>
-                    <td>{{ s.ThoiDiemSuDung|gio }}</td>
-                    <td>{{ s.HoTenSV }}</td>
-                    <td>{{ s.TenDV }} x {{ s.SoLuong }}</td>
-                    <td class="fw-semibold">{{ s.ThanhTien|tien }}</td>
-                    <td class="text-end">
-                        <form method="POST" action="{{ url_for('xoa_luot_dung', ma=s.MaSuDung) }}"
-                              onsubmit="return confirm('Xóa lượt này?');">
-                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </form>
-                    </td>
-                </tr>
-                {% else %}
-                <tr><td class="text-center text-muted py-4">Chưa có lượt nào.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-    // Chọn phòng/lớp thì ô sinh viên chỉ còn những người phù hợp
-    const locPhong = document.getElementById("locPhongForm");
-    const locLop = document.getElementById("locLopForm");
-    const oSV = document.getElementById("masv");
-
-    function locSinhVien() {
-        let conDangChon = false;
-        let dauTien = null;
-        Array.from(oSV.options).forEach(function (o) {
-            const khop = (!locPhong.value || o.dataset.phong === locPhong.value) &&
-                         (!locLop.value || o.dataset.lop === locLop.value);
-            o.hidden = !khop;
-            o.disabled = !khop;
-            if (khop && dauTien === null) dauTien = o;
-            if (khop && o.selected) conDangChon = true;
-        });
-        if (!conDangChon && dauTien) dauTien.selected = true;
-    }
-    locPhong.addEventListener("change", locSinhVien);
-    locLop.addEventListener("change", locSinhVien);
-</script>
 {% endblock %}
