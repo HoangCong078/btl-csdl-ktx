@@ -4,34 +4,52 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}KTX{% endblock %}</title>
+    <script>
+        // Đặt chế độ sáng/tối trước khi trang vẽ, tránh bị nháy
+        (function () { try { var t = localStorage.getItem("ktx-giao-dien"); if (t) { document.documentElement.setAttribute("data-bs-theme", t); } } catch (e) {} })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='tinh_nang.css') }}">
 </head>
 <body>
     {# Menu dùng chung cho thanh bên (máy tính) và ngăn kéo (điện thoại) #}
     {% macro menu() %}
     {% set ep = request.endpoint %}
     {% for dich, nhom, icon, nhan in [
-        ('sinhvien', ['sinhvien', 'xoa_sinhvien'], 'people', 'Sinh viên'),
+        ('trang_chu', ['trang_chu'], 'grid-1x2', 'Tổng quan'),
+        ('sinhvien', ['sinhvien', 'xoa_sinhvien', 'sua_sinhvien', 'ho_so'], 'people', 'Sinh viên'),
         ('phong', ['phong', 'xoa_phong', 'xep_phong', 'tra_phong'], 'door-open', 'Phòng'),
         ('khach', ['khach'], 'person-badge', 'Khách thăm'),
         ('dichvu', ['dichvu', 'xoa_luot_dung'], 'basket', 'Dịch vụ'),
-        ('xe', ['xe', 'quet_xe', 'xe_thang', 'xoa_luot_xe'], 'bicycle', 'Xe'),
-        ('hoadon', ['hoadon', 'hoadon_chitiet', 'hoadon_thu'], 'receipt', 'Hóa đơn'),
-        ('doanhthu', ['doanhthu'], 'graph-up-arrow', 'Doanh thu')] %}
+        ('xe', ['xe', 'quet_xe', 'xe_thang', 'huy_xe', 'xoa_luot_xe', 'lich_su_xe'], 'bicycle', 'Xe'),
+        ('hoadon', ['hoadon', 'hoadon_chitiet', 'hoadon_thu', 'hoadon_in'], 'receipt', 'Hóa đơn'),
+        ('doanhthu', ['doanhthu'], 'graph-up-arrow', 'Doanh thu'),
+        ('cong_cu', ['cong_cu', 'xuat_csv', 'xuat_tat_ca'], 'tools', 'Công cụ')] %}
     <a class="nav-link {{ 'active' if ep in nhom }}" href="{{ url_for(dich) }}">
         <i class="bi bi-{{ icon }}"></i>{{ nhan }}
+        {% if canh_bao is defined %}
+            {% if dich == 'hoadon' and canh_bao.hoadon %}<span class="huy-hieu" title="Hóa đơn tháng này chưa thu">{{ canh_bao.hoadon }}</span>{% endif %}
+            {% if dich == 'phong' and canh_bao.phong %}<span class="huy-hieu vang" title="Số phòng đã đầy">{{ canh_bao.phong }}</span>{% endif %}
+        {% endif %}
     </a>
     {% endfor %}
+    {% endmacro %}
+
+    {% macro chan_menu() %}
+    <div class="chan-menu">
+        <button type="button" class="nut-giao-dien" data-chuyen-giao-dien><i class="bi bi-moon-stars"></i><span>Chế độ tối</span></button>
+    </div>
     {% endmacro %}
 
     <!-- Máy tính: thanh bên -->
     <aside class="side d-none d-lg-flex">
         <div class="thuong-hieu"><i class="bi bi-buildings-fill"></i> KTX</div>
         <nav class="menu nav flex-column">{{ menu() }}</nav>
+        {{ chan_menu() }}
     </aside>
 
     <!-- Điện thoại: thanh trên và ngăn kéo -->
@@ -46,7 +64,10 @@
             <div class="thuong-hieu"><i class="bi bi-buildings-fill"></i> KTX</div>
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
         </div>
-        <nav class="offcanvas-body menu nav flex-column pt-0">{{ menu() }}</nav>
+        <div class="offcanvas-body pt-0 d-flex flex-column">
+            <nav class="menu nav flex-column">{{ menu() }}</nav>
+            {{ chan_menu() }}
+        </div>
     </div>
 
     <main class="main">
@@ -79,6 +100,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='tien_ich.js') }}"></script>
     <script>
         // Hộp xác nhận cho mọi form có data-confirm
         (function () {
@@ -145,7 +167,7 @@
             locLop.addEventListener("change", loc);
         })();
 
-        // Hộp nhập bị lỗi (trùng mã...) thì mở lại để không phải nhập lại: <div class="modal" data-mo="1">
+        // Hộp nhập bị lỗi thì mở lại để không phải nhập lại: <div class="modal" data-mo="1">
         document.querySelectorAll(".modal[data-mo='1']").forEach(function (m) {
             bootstrap.Modal.getOrCreateInstance(m).show();
         });

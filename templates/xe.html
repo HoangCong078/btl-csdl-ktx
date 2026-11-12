@@ -37,7 +37,7 @@
                     <tbody>
                         {% for d in ds_ve %}
                         <tr>
-                            <td><div class="fw-semibold">{{ d.BienSo }}</div><span class="phu">{{ d.LoaiXe }}</span></td>
+                            <td><div class="fw-semibold"><a class="fw-semibold text-reset" href="{{ url_for('lich_su_xe', bien_so=d.BienSo) }}">{{ d.BienSo }}</a></div><span class="phu">{{ d.LoaiXe }}</span></td>
                             <td>{{ d.HoTen }}<span class="phu">{{ d.MaSV }}</span></td>
                             <td>
                                 {% if d.ConHan %}<span class="tag tag-ok">Đang hiệu lực</span>
