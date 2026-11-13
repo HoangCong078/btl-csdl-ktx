@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Công cụ · KTX{% endblock %}
+
+{% block content %}
+{% from "_macros.html" import dau_trang %}
+{% call dau_trang("Công cụ") %}
+    <a class="btn btn-chinh" href="{{ url_for('xuat_tat_ca') }}"><i class="bi bi-file-earmark-zip"></i> Sao lưu tất cả (.zip)</a>
+{% endcall %}
+
+<div class="panel">
+    <div class="panel-head">Xuất dữ liệu ra file CSV (mở được bằng Excel)</div>
+    <div class="table-responsive">
+        <table class="table bang" data-khong="1">
+            <thead><tr><th>Dữ liệu</th><th>Bảng</th><th>Số dòng</th><th></th></tr></thead>
+            <tbody>
+                {% for d in ds %}
+                <tr>
+                    <td class="fw-semibold">{{ d.mo_ta }}</td><td class="text-muted">{{ d.bang }}</td><td>{{ d.so_dong }}</td>
+                    <td class="text-end"><a class="btn btn-sm btn-nhat" href="{{ url_for('xuat_csv', khoa=d.khoa) }}"><i class="bi bi-download"></i> Tải CSV</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

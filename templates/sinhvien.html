@@ -30,7 +30,7 @@
                         <div class="d-flex align-items-center gap-2">
                             <span class="avatar">{{ sv.HoTen.split()[-1][0] }}</span>
                             <div>
-                                <div class="fw-semibold">{{ sv.HoTen }}</div>
+                                <a class="fw-semibold text-reset text-decoration-none" href="{{ url_for('ho_so', masv=sv.MaSV) }}">{{ sv.HoTen }}</a>
                                 <span class="phu">{{ sv.MaSV }} · {{ sv.SoCMT }}</span>
                             </div>
                         </div>
@@ -39,7 +39,13 @@
                     <td><span class="tag tag-lop">{{ sv.Lop }}</span></td>
                     <td>{% if sv.Phong %}<span class="tag tag-ok">{{ sv.Phong }}</span>{% else %}<span class="text-muted">—</span>{% endif %}</td>
                     <td class="d-none d-lg-table-cell">{{ sv.QueQuan }}</td>
-                    <td class="text-end">{{ nut_xoa(url_for('xoa_sinhvien', masv=sv.MaSV), 'Xóa ' ~ sv.HoTen ~ '?') }}</td>
+                    <td class="text-end">
+                        <div class="hanh-dong">
+                            <button type="button" class="btn-icon" title="Sửa" data-bs-toggle="modal" data-bs-target="#modalSua"
+                                    data-sv="{{ sv|tojson|forceescape }}"><i class="bi bi-pencil"></i></button>
+                            {{ nut_xoa(url_for('xoa_sinhvien', masv=sv.MaSV), 'Xóa ' ~ sv.HoTen ~ '?') }}
+                        </div>
+                    </td>
                 </tr>
                 {% else %}
                 {{ trong(6, "Chưa có sinh viên.") }}
@@ -105,4 +111,80 @@
         </div>
     </div>
 </div>
+
+<!-- Hộp sửa sinh viên -->
+<div class="modal fade" id="modalSua" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-fullscreen-sm-down">
+        <div class="modal-content">
+            <form method="POST" id="formSua" action="#" data-mau="{{ url_for('sua_sinhvien', masv='__MA__') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Sửa thông tin sinh viên <span id="suaMa" class="text-muted fw-normal"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body row g-3">
+                    <div class="col-md-8">
+                        <label for="suaHoTen" class="form-label">Họ tên *</label>
+                        <input type="text" class="form-control" id="suaHoTen" name="HoTen" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="suaSoCMT" class="form-label">Số CMT/CCCD *</label>
+                        <input type="text" class="form-control" id="suaSoCMT" name="SoCMT" pattern="[0-9]{9,12}" title="9 đến 12 chữ số" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="suaNgaySinh" class="form-label">Ngày sinh</label>
+                        <input type="date" class="form-control" id="suaNgaySinh" name="NgaySinh">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="suaLop" class="form-label">Lớp</label>
+                        <select class="form-select" id="suaLop" name="Lop">
+                            {% for lop in ds_lop %}<option value="{{ lop }}">{{ lop }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="suaGioiTinh" class="form-label">Giới tính</label>
+                        <select class="form-select" id="suaGioiTinh" name="GioiTinh">
+                            {% for gt in ['Nam', 'Nữ', 'Khác'] %}<option value="{{ gt }}">{{ gt }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <label for="suaSDT" class="form-label">SĐT</label>
+                        <input type="tel" class="form-control" id="suaSDT" name="SDT">
+                    </div>
+                    <div class="col-md-7">
+                        <label for="suaQueQuan" class="form-label">Quê quán</label>
+                        <input type="text" class="form-control" id="suaQueQuan" name="QueQuan">
+                    </div>
+                    <div class="col-12"><small class="text-muted">Mã sinh viên là khóa chính nên không sửa được.</small></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-chinh">Lưu thay đổi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Bấm nút Sửa ở dòng nào thì điền thông tin của sinh viên đó vào hộp
+    document.getElementById("modalSua").addEventListener("show.bs.modal", function (e) {
+        const sv = JSON.parse(e.relatedTarget.dataset.sv);
+        const form = document.getElementById("formSua");
+        form.action = form.dataset.mau.replace("__MA__", encodeURIComponent(sv.MaSV));
+        document.getElementById("suaMa").textContent = "· " + sv.MaSV;
+        document.getElementById("suaHoTen").value = sv.HoTen || "";
+        document.getElementById("suaSoCMT").value = sv.SoCMT || "";
+        document.getElementById("suaNgaySinh").value = sv.NgaySinh || "";
+        document.getElementById("suaGioiTinh").value = sv.GioiTinh || "Nam";
+        document.getElementById("suaSDT").value = sv.SDT || "";
+        document.getElementById("suaQueQuan").value = sv.QueQuan || "";
+        const lop = document.getElementById("suaLop");
+        if (sv.Lop && !Array.from(lop.options).some(function (o) { return o.value === sv.Lop; })) {
+            lop.add(new Option(sv.Lop, sv.Lop));   // lớp chưa có trong danh sách thì thêm tạm để không mất dữ liệu
+        }
+        lop.value = sv.Lop || lop.options[0].value;
+    });
+</script>
 {% endblock %}

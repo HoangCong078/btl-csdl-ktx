@@ -15,6 +15,13 @@
     {{ so_lieu("Tổng doanh thu năm " ~ nam, tong_nam|tien) }}
 </div>
 
+<div class="panel mb-4">
+    <div class="panel-head">Biểu đồ doanh thu theo tháng</div>
+    <div class="panel-body">
+        <div class="bieu-do"><canvas id="bieuDo" data-hang="{{ hang|tojson|forceescape }}"></canvas></div>
+    </div>
+</div>
+
 <div class="panel">
     <div class="table-responsive">
         <table class="table table-hover bang">
@@ -45,4 +52,36 @@
     </div>
 </div>
 <small class="text-muted d-block mt-3">Chỉ tính các dịch vụ trong danh mục. Tiền phòng và vé xe nằm ở trang Hóa đơn.</small>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+    (function () {
+        const kho = document.getElementById("bieuDo");
+        if (!kho || typeof Chart === "undefined") { return; }
+        const hang = JSON.parse(kho.dataset.hang);
+        const mau = ["#4f46e5", "#16a34a", "#ea580c", "#0284c7", "#db2777", "#7c3aed"];
+        Chart.defaults.color = getComputedStyle(document.body).getPropertyValue("--muted").trim() || "#64748b";
+        new Chart(kho, {
+            type: "bar",
+            data: {
+                labels: ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"],
+                datasets: hang.map(function (h, i) {
+                    return { label: h.TenDV, data: h.Thang, backgroundColor: mau[i % mau.length], borderRadius: 4 };
+                })
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    x: { stacked: true },
+                    y: { stacked: true, ticks: { callback: function (v) { return v.toLocaleString("vi-VN"); } } }
+                },
+                plugins: { tooltip: { callbacks: { label: function (c) {
+                    return c.dataset.label + ": " + c.parsed.y.toLocaleString("vi-VN") + "đ";
+                } } } }
+            }
+        });
+    })();
+</script>
 {% endblock %}

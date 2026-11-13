@@ -748,6 +748,8 @@ def doanhthu():
                            nam=nam, ds_nam=danh_sach_nam(nam),
                            thang_ht=bay_gio.month if nam == bay_gio.year else 0)
 
+import tinh_nang_phu  # noqa: E402
+tinh_nang_phu.dang_ky(app, globals())
 
 if __name__ == "__main__":
     loi = kiem_tra_ket_noi()

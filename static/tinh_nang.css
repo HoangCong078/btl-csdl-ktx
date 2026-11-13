@@ -1,0 +1,65 @@
+/* ---------- 9. Sắp xếp bảng ---------- */
+.bang th.sx { cursor: pointer; user-select: none; }
+.bang th.sx:hover { color: var(--ink); }
+.bang th.sx::after { content: "\2195"; margin-left: .35rem; opacity: .35; }
+.bang th.sx-tang::after { content: "\2191"; opacity: 1; color: var(--primary); }
+.bang th.sx-giam::after { content: "\2193"; opacity: 1; color: var(--primary); }
+
+/* ---------- 6. Huy hiệu cảnh báo trên menu ---------- */
+.menu .nav-link .huy-hieu { margin-left: auto; padding: .05rem .5rem; border-radius: 99px; background: var(--bad-soft); color: var(--bad); font-size: .72rem; font-weight: 700; }
+.menu .nav-link .huy-hieu.vang { background: var(--warn-soft); color: var(--warn); }
+
+/* ---------- Chân menu (nút chế độ tối) ---------- */
+.side { overflow-y: auto; }
+.chan-menu { margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--line); }
+.offcanvas-body .chan-menu { margin-top: 1.5rem; }
+.nut-giao-dien { display: flex; align-items: center; gap: .7rem; width: 100%; padding: .55rem .75rem; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--muted); font-weight: 500; text-align: left; }
+.nut-giao-dien:hover { background: var(--line-soft); color: var(--ink); }
+
+/* ---------- 5. Biểu đồ ---------- */
+.bieu-do { position: relative; height: 320px; }
+
+/* ---------- 8. Hồ sơ sinh viên ---------- */
+.thong-tin { display: grid; grid-template-columns: 9rem 1fr; gap: .6rem 1rem; margin: 0; }
+.thong-tin dt { color: var(--muted); font-weight: 500; }
+.thong-tin dd { margin: 0; }
+@media (max-width: 575.98px) { .thong-tin { grid-template-columns: 1fr; gap: .1rem; } .thong-tin dd { margin-bottom: .6rem; } }
+
+/* ---------- 10. Chế độ tối ---------- */
+[data-bs-theme="dark"] {
+    --bg: #0b1220; --surface: #111a2d; --line: #26334d; --line-soft: #182238;
+    --ink: #e6eaf2; --muted: #9aa8c0;
+    --primary: #818cf8; --primary-dark: #a5b4fc; --primary-soft: #1e2447;
+    --ok: #4ade80;   --ok-soft: #0f2e20;
+    --warn: #fbbf24; --warn-soft: #33260a;
+    --bad: #f87171;  --bad-soft: #341416;
+    --info: #38bdf8; --info-soft: #0c2a3d;
+}
+[data-bs-theme="dark"] .bang { --bs-table-hover-bg: #16213a; }
+[data-bs-theme="dark"] .bang th { background: #0e1627; }
+[data-bs-theme="dark"] .btn-chinh, [data-bs-theme="dark"] .btn-chinh:hover, [data-bs-theme="dark"] .btn-chinh:focus { color: #0b1220; }
+[data-bs-theme="dark"] .btn-nhat:hover { background: #28306b; }
+[data-bs-theme="dark"] .btn-light { background: #1b2640; border-color: var(--line); color: var(--ink); }
+[data-bs-theme="dark"] .alert-success { border-color: #166534; }
+[data-bs-theme="dark"] .alert-danger  { border-color: #991b1b; }
+[data-bs-theme="dark"] .alert-warning { border-color: #92400e; }
+[data-bs-theme="dark"] .modal-content { background: var(--surface); }
+[data-bs-theme="dark"] .form-control, [data-bs-theme="dark"] .form-select { background-color: #0e1627; color: var(--ink); }
+
+/* ---------- 3. In hóa đơn ---------- */
+.to-hoa-don { max-width: 760px; margin: 1.5rem auto; padding: 2.25rem; background: #fff; color: #0f172a; border: 1px solid #e5e7eb; border-radius: 12px; }
+.to-hoa-don h1 { font-size: 1.4rem; text-align: center; margin: 0; }
+.to-hoa-don .tieu-de-phu { text-align: center; color: #64748b; margin: .25rem 0 1.5rem; }
+.to-hoa-don table { width: 100%; border-collapse: collapse; margin: 1.25rem 0; }
+.to-hoa-don th, .to-hoa-don td { padding: .55rem .6rem; border-bottom: 1px solid #e5e7eb; text-align: left; }
+.to-hoa-don th { background: #f8fafc; font-size: .8rem; text-transform: uppercase; color: #64748b; }
+.to-hoa-don .phai { text-align: right; }
+.to-hoa-don .tong td { border-bottom: 0; font-weight: 700; font-size: 1.05rem; }
+.to-hoa-don .chu-ky { display: flex; justify-content: space-between; margin-top: 3rem; text-align: center; }
+.to-hoa-don .chu-ky div { width: 45%; }
+.thanh-in { max-width: 760px; margin: 1.25rem auto 0; display: flex; gap: .5rem; justify-content: flex-end; }
+@media print {
+    body { background: #fff !important; }
+    .thanh-in { display: none !important; }
+    .to-hoa-don { margin: 0; max-width: none; border: 0; border-radius: 0; padding: 0; }
+}

@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}{{ sv.HoTen }} · KTX{% endblock %}
+
+{% block content %}
+{% from "_macros.html" import dau_trang, trong %}
+{% call dau_trang(sv.HoTen) %}
+    <a class="btn btn-light" href="{{ url_for('sinhvien') }}"><i class="bi bi-arrow-left"></i> Danh sách</a>
+    <a class="btn btn-nhat" href="{{ url_for('hoadon_chitiet', masv=sv.MaSV, thang=thang, nam=nam) }}">Hóa đơn tháng {{ thang }}</a>
+{% endcall %}
+
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="panel h-100">
+            <div class="panel-head">Thông tin cá nhân</div>
+            <div class="panel-body">
+                <dl class="thong-tin">
+                    <dt>Mã sinh viên</dt><dd>{{ sv.MaSV }}</dd>
+                    <dt>Số CMT/CCCD</dt><dd>{{ sv.SoCMT }}</dd>
+                    <dt>Ngày sinh</dt><dd>{{ sv.NgaySinh|ngay }}</dd>
+                    <dt>Giới tính</dt><dd>{{ sv.GioiTinh or "—" }}</dd>
+                    <dt>Lớp</dt><dd><span class="tag tag-lop">{{ sv.Lop or "—" }}</span></dd>
+                    <dt>Quê quán</dt><dd>{{ sv.QueQuan or "—" }}</dd>
+                    <dt>Điện thoại</dt><dd>{{ sv.SDT or "—" }}</dd>
+                    <dt>Phòng hiện tại</dt>
+                    <dd>{% if phong_ht %}<span class="tag tag-ok">{{ phong_ht.SoPhong }}</span> từ {{ phong_ht.NgayBatDau|ngay }}{% else %}Chưa có phòng{% endif %}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="panel h-100">
+            <div class="panel-head">
+                <span>Tiền tháng {{ thang }}/{{ nam }}</span>
+                {% if da_thu %}<span class="tag tag-ok">Đã thu</span>{% else %}<span class="tag tag-warn">Chưa thu</span>{% endif %}
+            </div>
+            <div class="table-responsive">
+                <table class="table bang" data-khong="1">
+                    <tbody>
+                        {% for c in ct %}
+                        <tr><td>{{ c.DienGiai }}</td><td class="text-end">{{ c.ThanhTien|tien }}</td></tr>
+                        {% else %}
+                        {{ trong(2, "Chưa có khoản thu nào trong tháng này.") }}
+                        {% endfor %}
+                    </tbody>
+                    <tfoot><tr><td class="fw-semibold">Tổng cộng</td><td class="text-end fw-bold">{{ tong.Tong|tien }}</td></tr></tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="panel h-100">
+            <div class="panel-head">Lịch sử ở</div>
+            <div class="table-responsive">
+                <table class="table bang">
+                    <thead><tr><th>Phòng</th><th>Từ ngày</th><th>Đến ngày</th><th>Đơn giá</th></tr></thead>
+                    <tbody>
+                        {% for d in lich_su_o %}
+                        <tr><td><span class="tag tag-lop">{{ d.SoPhong }}</span></td><td>{{ d.NgayBatDau|ngay }}</td>
+                            <td>{{ d.NgayKetThuc|ngay if d.NgayKetThuc else "Đang ở" }}</td><td>{{ d.DonGiaThangApDung|tien }}</td></tr>
+                        {% else %}
+                        {{ trong(4, "Chưa từng ở phòng nào.") }}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="panel h-100">
+            <div class="panel-head">Xe vé tháng</div>
+            <div class="table-responsive">
+                <table class="table bang">
+                    <thead><tr><th>Xe</th><th>Từ ngày</th><th>Trạng thái</th></tr></thead>
+                    <tbody>
+                        {% for v in ve %}
+                        <tr>
+                            <td><a class="fw-semibold text-reset" href="{{ url_for('lich_su_xe', bien_so=v.BienSo) }}">{{ v.BienSo }}</a><span class="phu">{{ v.LoaiXe }}</span></td>
+                            <td>{{ v.NgayBatDau|ngay }}</td>
+                            <td>{% if v.ConHan %}<span class="tag tag-ok">Đang hiệu lực</span>{% else %}<span class="tag tag-mute">Đã hủy</span>{% endif %}</td>
+                        </tr>
+                        {% else %}
+                        {{ trong(3, "Chưa đăng ký xe nào.") }}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="panel">
+            <div class="panel-head">Khách đến thăm gần đây</div>
+            <div class="table-responsive">
+                <table class="table bang">
+                    <thead><tr><th>Thời điểm</th><th>Khách</th><th>CMT/CCCD</th></tr></thead>
+                    <tbody>
+                        {% for k in khach %}
+                        <tr><td>{{ k.ThoiDiemDen|gio }}</td><td>{{ k.HoTen }}</td><td>{{ k.CMTKhach }}</td></tr>
+                        {% else %}
+                        {{ trong(3, "Chưa có khách đến thăm.") }}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
